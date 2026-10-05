@@ -1,60 +1,119 @@
 "use client";
 
-import { useState } from "react";
-const calendarDays = [
-  null,
-  null,
-  null,
-  1,
-  2,
-  3,
-  4,
-  5,
-  6,
-  7,
-  8,
-  9,
-  10,
-  11,
-  12,
-  13,
-  14,
-  15,
-  16,
-  17,
-  18,
-  19,
-  20,
-  21,
-  22,
-  23,
-  24,
-  25,
-  26,
-  27,
-  28,
-  29,
-  30,
-  31,
-];
-const paymentStatus = {
-  2: "paid",
-  5: "unpaid",
-  10: "paid",
-  15: "paid",
-  20: "unpaid",
-  25: "paid",
-};
-const paymentsByDate = {
-  2: [
-    { name: "Budi", room: "Kamar 01", amount: "Rp1.000.000" },
-    { name: "Andi", room: "Kamar 03", amount: "Rp1.000.000" },
-  ],
-  5: [{ name: "Sinta", room: "Kamar 05", amount: "Rp1.000.000" }],
-  10: [{ name: "Doni", room: "Kamar 02", amount: "Rp1.000.000" }],
-};
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 export default function Home() {
   const [selectedDate, setSelectedDate] = useState(null);
+  const [penghuni, setPenghuni] = useState([]);
+  const [pembayaran, setPembayaran] = useState([]);
+  const [currentPeriod, setCurrentPeriod] = useState("2026-10");
+  const [year, month] = currentPeriod.split("-").map(Number);
+
+  const firstDay = new Date(year, month - 1, 1).getDay();
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  const calendarDays = [
+    ...Array(firstDay === 0 ? 6 : firstDay - 1).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, index) => index + 1),
+  ];
+  const today = new Date();
+
+  const todayYear = today.getFullYear();
+  const todayMonth = String(today.getMonth() + 1).padStart(2, "0");
+  const todayDay = today.getDate();
+
+  const todayPeriod = `${todayYear}-${todayMonth}`;
+  const changeMonth = (offset) => {
+    const date = new Date(year, month - 1 + offset, 1);
+
+    const newYear = date.getFullYear();
+    const newMonth = String(date.getMonth() + 1).padStart(2, "0");
+
+    setCurrentPeriod(`${newYear}-${newMonth}`);
+    setSelectedDate(null);
+  };
+
+  useEffect(() => {
+    const fetchPenghuni = async () => {
+      const { data: penghuniData, error: penghuniError } = await supabase
+        .from("penghuni")
+        .select("*");
+
+      if (penghuniError) {
+        console.error("Gagal mengambil data penghuni:", penghuniError);
+        return;
+      }
+
+      setPenghuni(penghuniData);
+
+      const { data: pembayaranData, error: pembayaranError } = await supabase
+        .from("pembayaran")
+        .select("*");
+
+      if (pembayaranError) {
+        console.error("Gagal mengambil data pembayaran:", pembayaranError);
+        return;
+      }
+
+      setPembayaran(pembayaranData);
+    };
+
+    fetchPenghuni();
+  }, []);
+  const pembayaranPeriode = pembayaran.filter(
+    (payment) => payment.periode_bulan === currentPeriod,
+  );
+  const paidTenantIds = pembayaranPeriode.map((payment) => payment.penghuni_id);
+
+  const paidCount = penghuni.filter((tenant) =>
+    paidTenantIds.includes(tenant.id),
+  ).length;
+
+  const unpaidCount = penghuni.length - paidCount;
+  const paymentsByDate = pembayaranPeriode.reduce((result, payment) => {
+    const day = Number(payment.tanggal_bayar.split("-")[2]);
+
+    const tenant = penghuni.find(
+      (penghuni) => penghuni.id === payment.penghuni_id,
+    );
+
+    if (!tenant) return result;
+
+    if (!result[day]) {
+      result[day] = [];
+    }
+
+    result[day].push({
+      name: tenant.nama,
+      room: `Kamar ${tenant.no_kamar}`,
+      amount: `Rp${Number(payment.nominal).toLocaleString("id-ID")}`,
+    });
+
+    return result;
+  }, {});
+  const unpaidTenants = penghuni.filter(
+    (tenant) =>
+      !pembayaranPeriode.some((payment) => payment.penghuni_id === tenant.id),
+  );
+  const unpaidDates = {};
+
+  unpaidTenants.forEach((tenant) => {
+    if (!tenant.tanggal_jatuh_tempo) return;
+
+    const dueDate = tenant.tanggal_jatuh_tempo;
+
+    if (!dueDate.startsWith(currentPeriod)) return;
+
+    const day = Number(dueDate.split("-")[2]);
+
+    unpaidDates[day] = (unpaidDates[day] || 0) + 1;
+  });
+  const paymentStatusFromDatabase = {};
+  pembayaranPeriode.forEach((payment) => {
+    const day = Number(payment.tanggal_bayar.split("-")[2]);
+
+    paymentStatusFromDatabase[day] = "paid";
+  });
   return (
     <main className="min-h-screen bg-gray-100 p-6">
       <div className="mx-auto max-w-7xl">
@@ -72,7 +131,9 @@ export default function Home() {
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl bg-white p-5 shadow-sm">
             <p className="text-sm text-gray-500">Total Penghuni</p>
-            <p className="mt-2 text-3xl font-bold text-gray-900">12</p>
+            <p className="mt-2 text-3xl font-bold text-gray-900">
+              {penghuni.length}
+            </p>
           </div>
 
           <div className="rounded-xl bg-white p-5 shadow-sm">
@@ -82,12 +143,16 @@ export default function Home() {
 
           <div className="rounded-xl bg-white p-5 shadow-sm">
             <p className="text-sm text-gray-500">Sudah Bayar</p>
-            <p className="mt-2 text-3xl font-bold text-green-600">8</p>
+            <p className="mt-2 text-3xl font-bold text-green-600">
+              {paidCount}
+            </p>
           </div>
 
           <div className="rounded-xl bg-white p-5 shadow-sm">
             <p className="text-sm text-gray-500">Belum Bayar</p>
-            <p className="mt-2 text-3xl font-bold text-red-600">4</p>
+            <p className="mt-2 text-3xl font-bold text-red-600">
+              {unpaidCount}
+            </p>
           </div>
         </div>
 
@@ -97,15 +162,24 @@ export default function Home() {
           <div className="rounded-xl bg-white p-6 shadow-sm lg:col-span-2">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">
-                Oktober 2026
+                {new Date(year, month - 1, 1).toLocaleDateString("id-ID", {
+                  month: "long",
+                  year: "numeric",
+                })}
               </h2>
 
               <div className="flex gap-2">
-                <button className="rounded-lg border px-3 py-2 hover:bg-gray-50">
+                <button
+                  onClick={() => changeMonth(-1)}
+                  className="rounded-lg border px-3 py-2 hover:bg-gray-50"
+                >
                   ←
                 </button>
 
-                <button className="rounded-lg border px-3 py-2 hover:bg-gray-50">
+                <button
+                  onClick={() => changeMonth(1)}
+                  className="rounded-lg border px-3 py-2 hover:bg-gray-50"
+                >
                   →
                 </button>
               </div>
@@ -131,7 +205,7 @@ export default function Home() {
                   className={`min-h-20 rounded-lg border p-2 text-sm ${
                     day === null
                       ? "border-transparent bg-gray-50"
-                      : day === 5
+                      : currentPeriod === todayPeriod && day === todayDay
                         ? "border-blue-500 bg-blue-50"
                         : "hover:bg-gray-50"
                   }`}
@@ -140,17 +214,18 @@ export default function Home() {
                     <div className="flex h-full flex-col">
                       <span className="font-medium">{day}</span>
 
-                      {paymentStatus[day] === "paid" && (
+                      {paymentStatusFromDatabase[day] === "paid" && (
                         <div className="mt-2 flex items-center gap-1">
                           <span className="h-2 w-2 rounded-full bg-green-500"></span>
                           <span className="text-xs text-green-600">Bayar</span>
                         </div>
                       )}
-
-                      {paymentStatus[day] === "unpaid" && (
+                      {unpaidDates[day] && (
                         <div className="mt-2 flex items-center gap-1">
                           <span className="h-2 w-2 rounded-full bg-red-500"></span>
-                          <span className="text-xs text-red-600">Belum</span>
+                          <span className="text-xs text-red-600">
+                            {unpaidDates[day]} Belum
+                          </span>
                         </div>
                       )}
                     </div>
@@ -220,11 +295,41 @@ export default function Home() {
 
           {/* Payment List */}
           <div className="rounded-xl bg-white p-6 shadow-sm">
-            <h2 className="mb-6 text-xl font-semibold text-gray-900">
-              {selectedDate
-                ? `Pembayaran Tanggal ${selectedDate}`
-                : "Pembayaran"}
-            </h2>
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {selectedDate
+                  ? `Pembayaran Tanggal ${selectedDate}`
+                  : "Pembayaran"}
+              </h2>
+
+              <select
+                value={currentPeriod}
+                onChange={(e) => {
+                  setCurrentPeriod(e.target.value);
+                  setSelectedDate(null);
+                }}
+                className="rounded-lg border px-3 py-2 text-sm"
+              >
+                {Array.from({ length: 24 }, (_, index) => {
+                  const date = new Date(2026, index, 1);
+
+                  const value = `${date.getFullYear()}-${String(
+                    date.getMonth() + 1,
+                  ).padStart(2, "0")}`;
+
+                  const label = date.toLocaleDateString("id-ID", {
+                    month: "long",
+                    year: "numeric",
+                  });
+
+                  return (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
 
             {selectedDate && paymentsByDate[selectedDate] ? (
               <div className="space-y-4">
