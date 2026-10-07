@@ -6,11 +6,9 @@ import { supabase } from "@/lib/supabase";
 export default function PembayaranPage() {
   const [pembayaran, setPembayaran] = useState([]);
   const [penghuni, setPenghuni] = useState([]);
-
+  const [errorMessage, setErrorMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
-
   const [editingId, setEditingId] = useState(null);
-
   const [formData, setFormData] = useState({
     penghuni_id: "",
     tanggal_bayar: "",
@@ -27,6 +25,7 @@ export default function PembayaranPage() {
 
       if (pembayaranError) {
         console.error("Gagal mengambil data pembayaran:", pembayaranError);
+        setErrorMessage("Gagal mengambil data pembayaran.");
         return;
       }
 
@@ -37,6 +36,7 @@ export default function PembayaranPage() {
 
       if (penghuniError) {
         console.error("Gagal mengambil data penghuni:", penghuniError);
+        setErrorMessage("Gagal mengambil data penghuni.");
         return;
       }
 
@@ -86,6 +86,40 @@ export default function PembayaranPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!formData.penghuni_id) {
+      alert("Silakan pilih penghuni.");
+      return;
+    }
+
+    if (!formData.tanggal_bayar) {
+      alert("Tanggal bayar wajib diisi.");
+      return;
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+
+    if (formData.tanggal_bayar > today) {
+      alert("Tanggal bayar tidak boleh di masa depan.");
+      return;
+    }
+
+    if (!formData.nominal || Number(formData.nominal) <= 0) {
+      alert("Nominal pembayaran harus lebih dari 0.");
+      return;
+    }
+
+    if (!formData.periode_bulan) {
+      alert("Periode bulan wajib diisi.");
+      return;
+    }
+
+    const paymentMonth = formData.tanggal_bayar.slice(0, 7);
+
+    if (formData.periode_bulan > paymentMonth) {
+      alert("Periode pembayaran tidak boleh setelah tanggal bayar.");
+      return;
+    }
 
     const paymentData = {
       penghuni_id: Number(formData.penghuni_id),
@@ -229,7 +263,7 @@ export default function PembayaranPage() {
                     })
                   }
                   className="w-full rounded-lg border px-4 py-2"
-                  min="0"
+                  min="1"
                   required
                 />
               </div>
@@ -282,6 +316,11 @@ export default function PembayaranPage() {
           </div>
         )}
 
+        {errorMessage && (
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            {errorMessage}
+          </div>
+        )}
         <div className="overflow-hidden rounded-xl bg-white shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
