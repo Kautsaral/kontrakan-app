@@ -326,6 +326,15 @@ export default function PembayaranPage() {
                         >
                           Hapus
                         </button>
+
+                        <button
+                          onClick={() =>
+                            (window.location.href = `/pembayaran/${payment.id}/kwitansi`)
+                          }
+                          className="rounded border border-green-200 px-3 py-1 text-sm text-green-600 hover:bg-green-50"
+                        >
+                          Kwitansi
+                        </button>
                       </div>
                     </td>
                   </tr>

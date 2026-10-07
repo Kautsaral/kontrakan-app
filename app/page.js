@@ -108,6 +108,28 @@ export default function Home() {
 
     unpaidDates[day] = (unpaidDates[day] || 0) + 1;
   });
+
+  const unpaidTenantsByDate = {};
+
+  unpaidTenants.forEach((tenant) => {
+    if (!tenant.tanggal_jatuh_tempo) return;
+
+    const dueDate = tenant.tanggal_jatuh_tempo;
+
+    if (!dueDate.startsWith(currentPeriod)) return;
+
+    const day = Number(dueDate.split("-")[2]);
+
+    if (!unpaidTenantsByDate[day]) {
+      unpaidTenantsByDate[day] = [];
+    }
+
+    unpaidTenantsByDate[day].push({
+      name: tenant.nama,
+      room: `Kamar ${tenant.no_kamar}`,
+    });
+  });
+
   const paymentStatusFromDatabase = {};
   pembayaranPeriode.forEach((payment) => {
     const day = Number(payment.tanggal_bayar.split("-")[2]);
@@ -262,7 +284,26 @@ export default function Home() {
                           </p>
                         </div>
 
-                        <p className="font-medium">{payment.amount}</p>
+                        <div className="text-right">
+                          <p className="font-medium">{payment.amount}</p>
+                          <p className="text-sm text-green-600">Sudah bayar</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : unpaidTenantsByDate[selectedDate] ? (
+                  <div className="space-y-3">
+                    {unpaidTenantsByDate[selectedDate].map((tenant, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between border-b pb-3 last:border-b-0 last:pb-0"
+                      >
+                        <div>
+                          <p className="font-medium">{tenant.name}</p>
+                          <p className="text-sm text-gray-500">{tenant.room}</p>
+                        </div>
+
+                        <p className="font-medium text-red-600">Belum bayar</p>
                       </div>
                     ))}
                   </div>
@@ -346,6 +387,24 @@ export default function Home() {
                     <div className="text-right">
                       <p className="font-medium">{payment.amount}</p>
                       <p className="text-sm text-green-600">Sudah bayar</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : selectedDate && unpaidTenantsByDate[selectedDate] ? (
+              <div className="space-y-4">
+                {unpaidTenantsByDate[selectedDate].map((tenant, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between border-b pb-4 last:border-b-0"
+                  >
+                    <div>
+                      <p className="font-medium">{tenant.name}</p>
+                      <p className="text-sm text-gray-500">{tenant.room}</p>
+                    </div>
+
+                    <div className="text-right">
+                      <p className="font-medium text-red-600">Belum bayar</p>
                     </div>
                   </div>
                 ))}
