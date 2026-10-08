@@ -173,9 +173,9 @@ export default function PembayaranPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6">
+    <main className="min-h-screen bg-gray-100 p-4 sm:p-6">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
               Data Pembayaran
@@ -193,7 +193,7 @@ export default function PembayaranPage() {
           </button>
         </div>
         {showForm && (
-          <div className="mb-6 rounded-xl bg-white p-6 shadow-sm">
+          <div className="mb-6 rounded-xl bg-white p-4 shadow-sm sm:p-6">
             <h2 className="mb-4 text-xl font-semibold text-gray-900">
               {editingId ? "Edit Pembayaran" : "Tambah Pembayaran"}
             </h2>
@@ -215,7 +215,7 @@ export default function PembayaranPage() {
                       penghuni_id: e.target.value,
                     })
                   }
-                  className="w-full rounded-lg border px-4 py-2"
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   required
                 >
                   <option value="">Pilih Penghuni</option>
@@ -242,7 +242,7 @@ export default function PembayaranPage() {
                       tanggal_bayar: e.target.value,
                     })
                   }
-                  className="w-full rounded-lg border px-4 py-2"
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   required
                 />
               </div>
@@ -262,7 +262,7 @@ export default function PembayaranPage() {
                       nominal: e.target.value,
                     })
                   }
-                  className="w-full rounded-lg border px-4 py-2"
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   min="1"
                   required
                 />
@@ -282,7 +282,7 @@ export default function PembayaranPage() {
                       periode_bulan: e.target.value,
                     })
                   }
-                  className="w-full rounded-lg border px-4 py-2"
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   required
                 />
               </div>
@@ -290,7 +290,7 @@ export default function PembayaranPage() {
               <div className="flex gap-2 md:col-span-2">
                 <button
                   type="submit"
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                  className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
                 >
                   Simpan
                 </button>
@@ -307,7 +307,7 @@ export default function PembayaranPage() {
                       periode_bulan: "",
                     });
                   }}
-                  className="rounded-lg border px-4 py-2 hover:bg-gray-50"
+                  className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium hover:bg-gray-50"
                 >
                   Batal
                 </button>
@@ -326,31 +326,31 @@ export default function PembayaranPage() {
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-gray-600">
                 <tr>
-                  <th className="px-6 py-4">Penghuni</th>
-                  <th className="px-6 py-4">Tanggal Bayar</th>
-                  <th className="px-6 py-4">Nominal</th>
-                  <th className="px-6 py-4">Periode</th>
-                  <th className="px-6 py-4">Action</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4">Penghuni</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4">Tanggal Bayar</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4">Nominal</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4">Periode</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4">Action</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y">
                 {pembayaran.map((payment) => (
                   <tr key={payment.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-medium text-gray-900">
+                    <td className="px-4 py-3 font-medium text-gray-900 sm:px-6 sm:py-4">
                       {getTenantName(payment.penghuni_id)}
                     </td>
 
-                    <td className="px-6 py-4">{payment.tanggal_bayar}</td>
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">{payment.tanggal_bayar}</td>
 
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       Rp
                       {Number(payment.nominal).toLocaleString("id-ID")}
                     </td>
 
-                    <td className="px-6 py-4">{payment.periode_bulan}</td>
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">{payment.periode_bulan}</td>
 
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEdit(payment)}
@@ -383,7 +383,7 @@ export default function PembayaranPage() {
                   <tr>
                     <td
                       colSpan="5"
-                      className="px-6 py-10 text-center text-gray-500"
+                      className="px-4 py-8 text-center text-sm text-gray-500 sm:px-6 sm:py-10"
                     >
                       Belum ada data pembayaran.
                     </td>

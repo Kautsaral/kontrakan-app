@@ -12,7 +12,6 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
     setError("");
     setLoading(true);
 
@@ -43,21 +42,21 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-100 p-6">
-      <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-sm">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-gray-900">
+    <main className="flex min-h-screen items-center justify-center bg-gray-100 p-4 sm:p-6">
+      <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-sm sm:p-8">
+        <div className="mb-6 text-center sm:mb-8">
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
             Kontrakan App
           </h1>
 
-          <p className="mt-1 text-gray-500">
+          <p className="mt-1 text-sm text-gray-500 sm:text-base">
             Login Admin
           </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="mb-1 block text-sm text-gray-600">
+            <label className="mb-2 block text-sm font-medium text-gray-700">
               Password
             </label>
 
@@ -68,22 +67,22 @@ export default function LoginPage() {
                 setPassword(e.target.value);
                 setError("");
               }}
-              className="w-full rounded-lg border px-4 py-2 outline-none focus:border-blue-500"
+              className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:text-base"
               placeholder="Masukkan password"
               required
             />
           </div>
 
           {error && (
-            <p className="text-sm text-red-600">
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
               {error}
-            </p>
+            </div>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:text-base"
           >
             {loading ? "Memproses..." : "Login"}
           </button>
@@ -92,3 +91,4 @@ export default function LoginPage() {
     </main>
   );
 }
+

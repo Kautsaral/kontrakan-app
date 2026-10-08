@@ -119,12 +119,14 @@ export default function PenghuniPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6">
+    <main className="min-h-screen bg-gray-100 p-4 sm:p-6">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Data Penghuni</h1>
-            <p className="mt-1 text-gray-500">Kelola data penghuni kontrakan</p>
+            <p className="mt-1 text-sm text-gray-500 sm:text-base">
+              Kelola data penghuni kontrakan
+            </p>
           </div>
 
           <button
@@ -135,7 +137,7 @@ export default function PenghuniPage() {
           </button>
         </div>
         {showForm && (
-          <div className="mb-6 rounded-xl bg-white p-6 shadow-sm">
+          <div className="mb-6 rounded-xl bg-white p-4 shadow-sm sm:p-6">
             <h2 className="mb-4 text-xl font-semibold text-gray-900">
               Tambah Penghuni
             </h2>
@@ -151,7 +153,7 @@ export default function PenghuniPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, nama: e.target.value })
                 }
-                className="rounded-lg border px-4 py-2"
+                className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 required
               />
 
@@ -162,7 +164,7 @@ export default function PenghuniPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, no_hp: e.target.value })
                 }
-                className="rounded-lg border px-4 py-2"
+                className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
 
               <input
@@ -172,7 +174,7 @@ export default function PenghuniPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, no_kamar: e.target.value })
                 }
-                className="rounded-lg border px-4 py-2"
+                className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 required
               />
 
@@ -189,7 +191,7 @@ export default function PenghuniPage() {
                       tanggal_masuk: e.target.value,
                     })
                   }
-                  className="w-full rounded-lg border px-4 py-2"
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   required
                 />
               </div>
@@ -207,7 +209,7 @@ export default function PenghuniPage() {
                       tanggal_jatuh_tempo: e.target.value,
                     })
                   }
-                  className="w-full rounded-lg border px-4 py-2"
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
 
@@ -229,7 +231,7 @@ export default function PenghuniPage() {
               <div className="flex gap-2 md:col-span-2">
                 <button
                   type="submit"
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                  className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
                 >
                   Simpan
                 </button>
@@ -237,7 +239,7 @@ export default function PenghuniPage() {
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="rounded-lg border px-4 py-2 hover:bg-gray-50"
+                  className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium hover:bg-gray-50"
                 >
                   Batal
                 </button>
@@ -251,34 +253,40 @@ export default function PenghuniPage() {
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-gray-600">
                 <tr>
-                  <th className="px-6 py-4">Nama</th>
-                  <th className="px-6 py-4">Kamar</th>
-                  <th className="px-6 py-4">No. HP</th>
-                  <th className="px-6 py-4">Tanggal Masuk</th>
-                  <th className="px-6 py-4">Jatuh Tempo</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4">Action</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4">Nama</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4">Kamar</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4">No. HP</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4">Tanggal Masuk</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4">Jatuh Tempo</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4">Status</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4">Action</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y">
                 {penghuni.map((tenant) => (
                   <tr key={tenant.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-medium text-gray-900">
+                    <td className="px-4 py-3 font-medium text-gray-900 sm:px-6 sm:py-4">
                       {tenant.nama}
                     </td>
 
-                    <td className="px-6 py-4">Kamar {tenant.no_kamar}</td>
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
+                      Kamar {tenant.no_kamar}
+                    </td>
 
-                    <td className="px-6 py-4">{tenant.no_hp || "-"}</td>
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
+                      {tenant.no_hp || "-"}
+                    </td>
 
-                    <td className="px-6 py-4">{tenant.tanggal_masuk}</td>
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
+                      {tenant.tanggal_masuk}
+                    </td>
 
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       {tenant.tanggal_jatuh_tempo || "-"}
                     </td>
 
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-medium ${
                           tenant.status_aktif
@@ -290,7 +298,7 @@ export default function PenghuniPage() {
                       </span>
                     </td>
 
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEdit(tenant)}
@@ -314,7 +322,7 @@ export default function PenghuniPage() {
                   <tr>
                     <td
                       colSpan="7"
-                      className="px-6 py-10 text-center text-gray-500"
+                      className="px-4 py-8 text-center text-sm text-gray-500 sm:px-6 sm:py-10"
                     >
                       Belum ada data penghuni.
                     </td>

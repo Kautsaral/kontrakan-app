@@ -23,7 +23,7 @@ export default function Header() {
   };
 
   return (
-    <header className="flex items-center justify-between border-b bg-white px-6 py-4">
+    <header className="flex items-center justify-between border-b bg-white px-6 py-4 print:hidden">
       <div>
         <h1 className="font-bold text-gray-900">Kontrakan App</h1>
       </div>
