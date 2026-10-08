@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
+import { verifySessionToken } from "@/lib/auth";
 
-export function middleware(request) {
+export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
-  const session = request.cookies.get("admin_session");
+  const session = request.cookies.get("admin_session")?.value;
 
   const isLoginPage = pathname === "/login";
   const isApiLogin = pathname === "/api/login";
@@ -12,11 +13,13 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
-  if (!session && !isLoginPage) {
+  const isValidSession = await verifySessionToken(session);
+
+  if (!isValidSession && !isLoginPage) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (session && isLoginPage) {
+  if (isValidSession && isLoginPage) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
