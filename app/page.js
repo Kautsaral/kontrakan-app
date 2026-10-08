@@ -15,11 +15,8 @@ export default function Home() {
   const [pembayaran, setPembayaran] = useState([]);
   const [currentPeriod, setCurrentPeriod] = useState(initialPeriod);
 
+  // Calendar period
   const [year, month] = currentPeriod.split("-").map(Number);
-
-  // =========================
-  // CALENDAR
-  // =========================
 
   const firstDay = new Date(year, month - 1, 1).getDay();
 
@@ -55,10 +52,6 @@ export default function Home() {
     setSelectedDate(null);
   };
 
-  // =========================
-  // FETCH DATA
-  // =========================
-
   useEffect(() => {
     const fetchData = async () => {
       const { data: penghuniData, error: penghuniError } = await supabase
@@ -88,7 +81,7 @@ export default function Home() {
   }, []);
 
   // =========================
-  // PAYMENT DATA
+  // PAYMENT SUMMARY
   // =========================
 
   const pembayaranPeriode = pembayaran.filter(
@@ -110,10 +103,6 @@ export default function Home() {
 
   const paymentPercentage =
     penghuni.length > 0 ? Math.round((paidCount / penghuni.length) * 100) : 0;
-
-  // =========================
-  // TOTAL ROOM
-  // =========================
 
   const totalRooms = new Set(
     penghuni.map((tenant) => tenant.no_kamar).filter(Boolean),
@@ -144,17 +133,13 @@ export default function Home() {
   }, {});
 
   // =========================
-  // UNPAID TENANTS
+  // UNPAID
   // =========================
 
   const unpaidTenants = penghuni.filter(
     (tenant) =>
       !pembayaranPeriode.some((payment) => payment.penghuni_id === tenant.id),
   );
-
-  // =========================
-  // UNPAID DATE
-  // =========================
 
   const unpaidDates = {};
 
@@ -173,7 +158,7 @@ export default function Home() {
   });
 
   // =========================
-  // OVERDUE TENANTS
+  // OVERDUE
   // =========================
 
   const overdueTenants = unpaidTenants.filter((tenant) => {
@@ -203,7 +188,7 @@ export default function Home() {
   });
 
   // =========================
-  // REMINDER JATUH TEMPO
+  // REMINDER
   // =========================
 
   const parseDate = (dateString) => {
@@ -234,9 +219,7 @@ export default function Home() {
           payment.periode_bulan === duePeriod,
       );
 
-      if (alreadyPaid) {
-        return null;
-      }
+      if (alreadyPaid) return null;
 
       const daysUntilDue = getDateDifference(todayFullDate, dueDate);
 
@@ -250,9 +233,7 @@ export default function Home() {
         category = "soon";
       }
 
-      if (!category) {
-        return null;
-      }
+      if (!category) return null;
 
       return {
         ...tenant,
@@ -277,7 +258,7 @@ export default function Home() {
   );
 
   // =========================
-  // PHASE 21 - DASHBOARD ANALYTICS
+  // ANALYTICS
   // =========================
 
   const totalTransactions = pembayaran.length;
@@ -334,7 +315,7 @@ export default function Home() {
   );
 
   // =========================
-  // FORMAT DATE
+  // FORMATTERS
   // =========================
 
   const formatDate = (dateString) => {
@@ -347,650 +328,590 @@ export default function Home() {
     });
   };
 
-  // =========================
-  // FORMAT CURRENCY
-  // =========================
-
   const formatCurrency = (value) => {
     return `Rp${Number(value || 0).toLocaleString("id-ID")}`;
   };
 
-  // =========================
-  // RENDER
-  // =========================
+  const periodLabel = new Date(
+    `${currentPeriod}-01T00:00:00`,
+  ).toLocaleDateString("id-ID", {
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <main className="min-h-screen bg-gray-100 p-4 sm:p-6">
       <div className="mx-auto max-w-7xl">
-        {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-            Dashboard Kontrakan
-          </h1>
+        {/* HEADER */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
 
-          <p className="mt-1 text-sm text-gray-500 sm:text-base">
-            Monitoring penghuni dan pembayaran kontrakan
+          <p className="mt-1 text-sm text-gray-500">
+            Ringkasan pembayaran dan kondisi penghuni kontrakan
           </p>
         </div>
 
-        {/* Summary Cards */}
-        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-5">
-            <p className="text-xs font-medium text-gray-500 sm:text-sm">
-              Total Penghuni
-            </p>
+        {/* MAIN DASHBOARD */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* =========================
+              LEFT CONTENT
+          ========================= */}
+          <div className="space-y-6 lg:col-span-2">
+            {/* DETAIL + REMINDER + CALENDAR */}
+            <div className="rounded-2xl bg-white p-4 shadow-sm sm:p-6">
+              {/* DETAIL PEMBAYARAN */}
+              <div className="mb-6">
+                <h2 className="mb-4 text-lg font-semibold text-gray-900">
+                  Detail Pembayaran
+                </h2>
 
-            <p className="mt-2 text-2xl font-bold text-gray-900 sm:text-3xl">
-              {penghuni.length}
-            </p>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                    <p className="text-sm text-gray-500">Periode Pembayaran</p>
 
-            <p className="mt-1 text-xs text-gray-400">Penghuni terdaftar</p>
-          </div>
-
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-5">
-            <p className="text-xs font-medium text-gray-500 sm:text-sm">
-              Total Kamar
-            </p>
-
-            <p className="mt-2 text-2xl font-bold text-gray-900 sm:text-3xl">
-              {totalRooms}
-            </p>
-
-            <p className="mt-1 text-xs text-gray-400">
-              Berdasarkan data penghuni
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-5">
-            <p className="text-xs font-medium text-gray-500 sm:text-sm">
-              Sudah Bayar
-            </p>
-
-            <p className="mt-2 text-2xl font-bold text-green-600 sm:text-3xl">
-              {paidCount}
-            </p>
-
-            <p className="mt-1 text-xs text-gray-400">
-              {paymentPercentage}% dari penghuni
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-5">
-            <p className="text-xs font-medium text-gray-500 sm:text-sm">
-              Belum Bayar
-            </p>
-
-            <p className="mt-2 text-2xl font-bold text-red-600 sm:text-3xl">
-              {unpaidCount}
-            </p>
-
-            <p className="mt-1 text-xs text-gray-400">
-              Periode {currentPeriod}
-            </p>
-          </div>
-        </div>
-
-        {/* Payment Summary */}
-        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-5">
-            <p className="text-sm font-medium text-gray-500">Total Pemasukan</p>
-
-            <p className="mt-2 text-2xl font-bold text-gray-900 sm:text-3xl">
-              {formatCurrency(totalIncome)}
-            </p>
-
-            <p className="mt-1 text-xs text-gray-400">
-              Periode pembayaran {currentPeriod}
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-500">
-                Progress Pembayaran
-              </p>
-
-              <span className="text-sm font-semibold text-gray-900">
-                {paymentPercentage}%
-              </span>
-            </div>
-
-            <div className="mt-3 h-3 overflow-hidden rounded-full bg-gray-100">
-              <div
-                className="h-full rounded-full bg-green-500 transition-all"
-                style={{
-                  width: `${paymentPercentage}%`,
-                }}
-              />
-            </div>
-
-            <p className="mt-2 text-xs text-gray-400">
-              {paidCount} dari {penghuni.length} penghuni sudah melakukan
-              pembayaran
-            </p>
-          </div>
-        </div>
-
-        {/* ========================= */}
-        {/* PHASE 21 - ANALYTICS */}
-        {/* ========================= */}
-
-        <div className="mb-8 rounded-xl bg-white p-4 shadow-sm sm:p-6">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">
-              📊 Dashboard Analytics
-            </h2>
-
-            <p className="mt-1 text-sm text-gray-500">
-              Ringkasan transaksi dan tren pemasukan
-            </p>
-          </div>
-
-          {/* Analytics Cards */}
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-              <p className="text-sm text-gray-600">Total Transaksi</p>
-
-              <p className="mt-1 text-2xl font-bold text-blue-700">
-                {totalTransactions}
-              </p>
-
-              <p className="mt-1 text-xs text-gray-500">
-                Semua pembayaran tercatat
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-green-100 bg-green-50 p-4">
-              <p className="text-sm text-gray-600">Total Pemasukan</p>
-
-              <p className="mt-1 text-2xl font-bold text-green-700">
-                {formatCurrency(totalPaymentAmount)}
-              </p>
-
-              <p className="mt-1 text-xs text-gray-500">
-                Berdasarkan tanggal pembayaran
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-purple-100 bg-purple-50 p-4">
-              <p className="text-sm text-gray-600">Rata-rata Pembayaran</p>
-
-              <p className="mt-1 text-2xl font-bold text-purple-700">
-                {formatCurrency(averagePayment)}
-              </p>
-
-              <p className="mt-1 text-xs text-gray-500">
-                Rata-rata per transaksi
-              </p>
-            </div>
-          </div>
-
-          {/* Monthly Analytics */}
-          <div>
-            <div className="mb-4">
-              <h3 className="font-semibold text-gray-900">
-                Tren Pemasukan 6 Bulan Terakhir
-              </h3>
-
-              <p className="text-xs text-gray-500">
-                Berdasarkan tanggal pembayaran
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {monthlyAnalytics.map((item) => (
-                <div key={item.period}>
-                  <div className="mb-1 flex items-center justify-between gap-3 text-sm">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="w-12 shrink-0 font-medium text-gray-700">
-                        {item.label}
-                      </span>
-
-                      <span className="truncate text-xs text-gray-400">
-                        {item.transactions} transaksi
-                      </span>
-                    </div>
-
-                    <span className="shrink-0 font-semibold text-gray-900">
-                      {formatCurrency(item.income)}
-                    </span>
+                    <p className="mt-1 text-lg font-semibold text-gray-900">
+                      {periodLabel}
+                    </p>
                   </div>
 
-                  <div className="h-3 overflow-hidden rounded-full bg-gray-100">
-                    <div
-                      className="h-full rounded-full bg-blue-500 transition-all"
-                      style={{
-                        width: `${(item.income / maxMonthlyIncome) * 100}%`,
-                      }}
-                    />
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                    <p className="text-sm text-gray-500">Total Pemasukan</p>
+
+                    <p className="mt-1 text-lg font-semibold text-gray-900">
+                      {formatCurrency(totalIncome)}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                    <p className="text-sm text-gray-500">Sudah Bayar</p>
+
+                    <p className="mt-1 text-lg font-semibold text-green-600">
+                      {paidCount} penghuni
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                    <p className="text-sm text-gray-500">Belum Bayar</p>
+
+                    <p className="mt-1 text-lg font-semibold text-red-600">
+                      {unpaidCount} penghuni
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
+              </div>
 
-        {/* Reminder Jatuh Tempo */}
-        {reminderTenants.length > 0 && (
-          <div className="mb-8 rounded-xl border border-yellow-200 bg-yellow-50 p-4 shadow-sm sm:p-5">
-            <div className="mb-5">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🔔</span>
-
-                <h2 className="font-semibold text-gray-900">
+              {/* REMINDER */}
+              <div className="mb-6">
+                <h2 className="mb-4 text-lg font-semibold text-gray-900">
                   Reminder Jatuh Tempo
                 </h2>
+
+                {reminderTenants.length === 0 ? (
+                  <div className="rounded-xl border border-green-200 bg-green-50 p-4">
+                    <p className="font-medium text-green-700">
+                      Tidak Ada Reminder
+                    </p>
+
+                    <p className="mt-1 text-sm text-green-600">
+                      Tidak ada penghuni yang perlu diingatkan dalam 7 hari ke
+                      depan.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* OVERDUE */}
+                    {overdueReminders.length > 0 && (
+                      <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                        <p className="mb-2 font-semibold text-red-700">
+                          🔴 Terlambat
+                        </p>
+
+                        <div className="space-y-2">
+                          {overdueReminders.map((tenant) => (
+                            <div
+                              key={tenant.id}
+                              className="flex flex-col justify-between gap-1 sm:flex-row sm:items-center"
+                            >
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  {tenant.nama}
+                                </p>
+
+                                <p className="text-sm text-gray-500">
+                                  Kamar {tenant.no_kamar}
+                                </p>
+                              </div>
+
+                              <p className="text-sm font-medium text-red-600">
+                                Jatuh tempo{" "}
+                                {formatDate(tenant.tanggal_jatuh_tempo)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TODAY */}
+                    {todayReminders.length > 0 && (
+                      <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4">
+                        <p className="mb-2 font-semibold text-yellow-700">
+                          🟡 Jatuh Tempo Hari Ini
+                        </p>
+
+                        <div className="space-y-2">
+                          {todayReminders.map((tenant) => (
+                            <div
+                              key={tenant.id}
+                              className="flex flex-col justify-between gap-1 sm:flex-row sm:items-center"
+                            >
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  {tenant.nama}
+                                </p>
+
+                                <p className="text-sm text-gray-500">
+                                  Kamar {tenant.no_kamar}
+                                </p>
+                              </div>
+
+                              <p className="text-sm font-medium text-yellow-700">
+                                Jatuh tempo hari ini
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SOON */}
+                    {soonReminders.length > 0 && (
+                      <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                        <p className="mb-2 font-semibold text-blue-700">
+                          🟢 Segera Jatuh Tempo
+                        </p>
+
+                        <div className="space-y-2">
+                          {soonReminders.map((tenant) => (
+                            <div
+                              key={tenant.id}
+                              className="flex flex-col justify-between gap-1 sm:flex-row sm:items-center"
+                            >
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  {tenant.nama}
+                                </p>
+
+                                <p className="text-sm text-gray-500">
+                                  Kamar {tenant.no_kamar}
+                                </p>
+                              </div>
+
+                              <p className="text-sm font-medium text-blue-700">
+                                Jatuh tempo{" "}
+                                {formatDate(tenant.tanggal_jatuh_tempo)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <p className="mt-1 text-sm text-gray-600">
-                {reminderTenants.length} penghuni membutuhkan perhatian terkait
-                pembayaran.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {/* Terlambat */}
-              {overdueReminders.length > 0 && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-                  <div className="mb-3">
-                    <p className="font-semibold text-red-700">🔴 Terlambat</p>
-
-                    <p className="text-xs text-red-600">
-                      Sudah melewati tanggal jatuh tempo.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    {overdueReminders.map((tenant) => (
-                      <div
-                        key={tenant.id}
-                        className="flex flex-col gap-2 rounded-lg bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {tenant.nama}
-                          </p>
-
-                          <p className="text-sm text-gray-500">
-                            Kamar {tenant.no_kamar}
-                          </p>
-                        </div>
-
-                        <div className="text-left sm:text-right">
-                          <p className="text-sm font-medium text-red-600">
-                            Jatuh tempo
-                          </p>
-
-                          <p className="text-sm text-gray-500">
-                            {formatDate(tenant.tanggal_jatuh_tempo)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Hari Ini */}
-              {todayReminders.length > 0 && (
-                <div className="rounded-lg border border-yellow-200 bg-yellow-100 p-4">
-                  <div className="mb-3">
-                    <p className="font-semibold text-yellow-700">
-                      🟡 Jatuh Tempo Hari Ini
-                    </p>
-
-                    <p className="text-xs text-yellow-700">
-                      Pembayaran belum tercatat.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    {todayReminders.map((tenant) => (
-                      <div
-                        key={tenant.id}
-                        className="flex flex-col gap-2 rounded-lg bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {tenant.nama}
-                          </p>
-
-                          <p className="text-sm text-gray-500">
-                            Kamar {tenant.no_kamar}
-                          </p>
-                        </div>
-
-                        <div className="text-left sm:text-right">
-                          <p className="text-sm font-medium text-yellow-700">
-                            Hari ini
-                          </p>
-
-                          <p className="text-sm text-gray-500">
-                            {formatDate(tenant.tanggal_jatuh_tempo)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Segera */}
-              {soonReminders.length > 0 && (
-                <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-                  <div className="mb-3">
-                    <p className="font-semibold text-green-700">
-                      🟢 Segera Jatuh Tempo
-                    </p>
-
-                    <p className="text-xs text-green-700">
-                      Jatuh tempo dalam 7 hari ke depan.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    {soonReminders.map((tenant) => (
-                      <div
-                        key={tenant.id}
-                        className="flex flex-col gap-2 rounded-lg bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {tenant.nama}
-                          </p>
-
-                          <p className="text-sm text-gray-500">
-                            Kamar {tenant.no_kamar}
-                          </p>
-                        </div>
-
-                        <div className="text-left sm:text-right">
-                          <p className="text-sm font-medium text-green-700">
-                            H-{tenant.daysUntilDue}
-                          </p>
-
-                          <p className="text-sm text-gray-500">
-                            {formatDate(tenant.tanggal_jatuh_tempo)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Tidak Ada Reminder */}
-        {reminderTenants.length === 0 && (
-          <div className="mb-8 rounded-xl border border-green-200 bg-green-50 p-4 shadow-sm sm:p-5">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">✅</span>
-
+              {/* CALENDAR */}
               <div>
-                <h2 className="font-semibold text-green-700">
-                  Tidak Ada Reminder
-                </h2>
+                <div className="mb-5 flex items-center justify-between">
+                  <button
+                    onClick={() => changeMonth(-1)}
+                    className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    ←
+                  </button>
 
-                <p className="mt-1 text-sm text-green-600">
-                  Tidak ada penghuni aktif yang memiliki pembayaran terlambat
-                  atau jatuh tempo dalam 7 hari ke depan.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Main Content */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Calendar */}
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6 lg:col-span-2">
-            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {new Date(year, month - 1, 1).toLocaleDateString("id-ID", {
-                  month: "long",
-                  year: "numeric",
-                })}
-              </h2>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => changeMonth(-1)}
-                  className="rounded-lg border px-3 py-2 hover:bg-gray-50"
-                >
-                  ←
-                </button>
-
-                <button
-                  onClick={() => changeMonth(1)}
-                  className="rounded-lg border px-3 py-2 hover:bg-gray-50"
-                >
-                  →
-                </button>
-              </div>
-            </div>
-
-            {/* Calendar Header */}
-            <div className="grid grid-cols-7 text-center text-sm font-medium text-gray-500">
-              <div>Sen</div>
-              <div>Sel</div>
-              <div>Rab</div>
-              <div>Kam</div>
-              <div>Jum</div>
-              <div>Sab</div>
-              <div>Min</div>
-            </div>
-
-            {/* Calendar */}
-            <div className="mt-4 grid grid-cols-7 gap-2">
-              {calendarDays.map((day, index) => (
-                <div
-                  key={index}
-                  onClick={() => day && setSelectedDate(day)}
-                  className={`min-h-16 rounded-lg border p-1.5 text-xs sm:min-h-20 sm:p-2 sm:text-sm ${
-                    day === null
-                      ? "border-transparent bg-gray-50"
-                      : currentPeriod === todayPeriod && day === todayDay
-                        ? "border-blue-500 bg-blue-50"
-                        : "hover:bg-gray-50"
-                  }`}
-                >
-                  {day && (
-                    <div className="flex h-full flex-col">
-                      <span className="font-medium">{day}</span>
-
-                      {/* Paid */}
-                      {paymentStatusFromDatabase[day] > 0 && (
-                        <div className="mt-2 flex items-center gap-1">
-                          <span className="h-2 w-2 rounded-full bg-green-500" />
-
-                          <span className="text-xs text-green-600">
-                            {paymentStatusFromDatabase[day]} Bayar
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Unpaid */}
-                      {unpaidDates[day] > 0 && (
-                        <div className="mt-1 flex items-center gap-1">
-                          <span className="h-2 w-2 rounded-full bg-red-500" />
-
-                          <span className="text-xs text-red-600">
-                            {unpaidDates[day]} Belum
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Selected Date Detail */}
-            {selectedDate && (
-              <div className="mt-6 rounded-lg border bg-gray-50 p-3 sm:p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900">
-                    Pembayaran Tanggal {selectedDate}
-                  </h3>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    {periodLabel}
+                  </h2>
 
                   <button
-                    onClick={() => setSelectedDate(null)}
-                    className="text-sm text-gray-500 hover:text-gray-900"
+                    onClick={() => changeMonth(1)}
+                    className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                   >
-                    Tutup
+                    →
                   </button>
                 </div>
 
-                {paymentsByDate[selectedDate] ? (
-                  <div className="space-y-3">
-                    {paymentsByDate[selectedDate].map((payment, index) => (
-                      <div
-                        key={index}
-                        className="flex flex-col gap-2 border-b pb-3 last:border-b-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div>
-                          <p className="font-medium">{payment.name}</p>
+                {/* WEEKDAY */}
+                <div className="mb-2 grid grid-cols-7 gap-2 text-center text-xs font-semibold text-gray-500 sm:text-sm">
+                  <div>Sen</div>
+                  <div>Sel</div>
+                  <div>Rab</div>
+                  <div>Kam</div>
+                  <div>Jum</div>
+                  <div>Sab</div>
+                  <div>Min</div>
+                </div>
 
-                          <p className="text-sm text-gray-500">
-                            {payment.room}
-                          </p>
+                {/* CALENDAR DAYS */}
+                <div className="grid grid-cols-7 gap-2">
+                  {calendarDays.map((day, index) => {
+                    if (!day) {
+                      return (
+                        <div
+                          key={`empty-${index}`}
+                          className="min-h-20 rounded-xl"
+                        />
+                      );
+                    }
+
+                    const paymentCount = paymentStatusFromDatabase[day] || 0;
+
+                    const unpaidCountForDay = unpaidDates[day] || 0;
+
+                    const isSelected = selectedDate === day;
+
+                    const isToday =
+                      currentPeriod === todayPeriod && day === todayDay;
+
+                    return (
+                      <button
+                        key={day}
+                        onClick={() => setSelectedDate(day)}
+                        className={`min-h-20 rounded-xl border p-2 text-left transition ${
+                          isSelected
+                            ? "border-blue-500 bg-blue-50"
+                            : isToday
+                              ? "border-blue-300 bg-blue-50/50"
+                              : "border-gray-100 bg-gray-50 hover:bg-gray-100"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span
+                            className={`text-sm font-semibold ${
+                              isToday ? "text-blue-600" : "text-gray-700"
+                            }`}
+                          >
+                            {day}
+                          </span>
                         </div>
 
-                        <p className="font-medium">{payment.amount}</p>
+                        <div className="mt-2 space-y-1">
+                          {paymentCount > 0 && (
+                            <div className="rounded-md bg-green-100 px-1.5 py-1 text-center text-[10px] font-medium text-green-700 sm:text-xs">
+                              {paymentCount} Bayar
+                            </div>
+                          )}
+
+                          {unpaidCountForDay > 0 && (
+                            <div className="rounded-md bg-red-100 px-1.5 py-1 text-center text-[10px] font-medium text-red-700 sm:text-xs">
+                              {unpaidCountForDay} Belum
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* SELECTED DATE */}
+                {selectedDate && (
+                  <div className="mt-6 rounded-xl border border-gray-100 bg-gray-50 p-4">
+                    <h3 className="mb-3 font-semibold text-gray-900">
+                      Pembayaran Tanggal {selectedDate} {periodLabel}
+                    </h3>
+
+                    {paymentsByDate[selectedDate]?.length > 0 ? (
+                      <div className="space-y-3">
+                        {paymentsByDate[selectedDate].map((payment, index) => (
+                          <div
+                            key={index}
+                            className="flex flex-col justify-between gap-2 rounded-lg border border-gray-200 bg-white p-3 sm:flex-row sm:items-center"
+                          >
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {payment.name}
+                              </p>
+
+                              <p className="text-sm text-gray-500">
+                                {payment.room}
+                              </p>
+                            </div>
+
+                            <p className="font-semibold text-green-600">
+                              {payment.amount}
+                            </p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    ) : (
+                      <p className="text-sm text-gray-500">
+                        Belum ada pembayaran pada tanggal ini.
+                      </p>
+                    )}
                   </div>
-                ) : (
-                  <p className="text-sm text-gray-500">
-                    Tidak ada pembayaran pada tanggal ini.
-                  </p>
                 )}
-              </div>
-            )}
 
-            {/* Legend */}
-            <div className="mt-6 flex flex-wrap gap-3 text-xs text-gray-600 sm:gap-4 sm:text-sm">
-              <div className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-green-500" />
-                Sudah Bayar
-              </div>
+                {/* LEGEND */}
+                <div className="mt-5 flex flex-wrap gap-4 text-xs text-gray-500">
+                  <div className="flex items-center gap-2">
+                    <span className="h-3 w-3 rounded bg-green-100" />
+                    Sudah Bayar
+                  </div>
 
-              <div className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-red-500" />
-                Belum Bayar
-              </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-3 w-3 rounded bg-red-100" />
+                    Belum Bayar
+                  </div>
 
-              <div className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-blue-500" />
-                Hari Ini
+                  <div className="flex items-center gap-2">
+                    <span className="h-3 w-3 rounded bg-blue-100" />
+                    Hari Dipilih
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Payment List */}
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
-            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Pembayaran
-              </h2>
+            {/* PAYMENT LIST */}
+            <div className="rounded-2xl bg-white p-4 shadow-sm sm:p-6">
+              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Daftar Pembayaran
+                  </h2>
 
-              <select
-                value={currentPeriod}
-                onChange={(e) => {
-                  setCurrentPeriod(e.target.value);
+                  <p className="text-sm text-gray-500">
+                    Ringkasan pembayaran berdasarkan periode
+                  </p>
+                </div>
 
-                  setSelectedDate(null);
-                }}
-                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:w-auto"
-              >
-                {Array.from({ length: 24 }, (_, index) => {
-                  const date = new Date(2026, index, 1);
+                <select
+                  value={currentPeriod}
+                  onChange={(e) => {
+                    setCurrentPeriod(e.target.value);
+                    setSelectedDate(null);
+                  }}
+                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                >
+                  {Array.from({ length: 24 }, (_, index) => {
+                    const date = new Date(2026, index, 1);
 
-                  const value = `${date.getFullYear()}-${String(
-                    date.getMonth() + 1,
-                  ).padStart(2, "0")}`;
+                    const value = `${date.getFullYear()}-${String(
+                      date.getMonth() + 1,
+                    ).padStart(2, "0")}`;
 
-                  const label = date.toLocaleDateString("id-ID", {
-                    month: "long",
-                    year: "numeric",
-                  });
-
-                  return (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-
-            {/* Payment Summary & List */}
-            <div className="space-y-4">
-              {/* Total Income */}
-              <div className="rounded-lg bg-green-50 p-4">
-                <p className="text-sm text-gray-600">Total pemasukan</p>
-
-                <p className="mt-1 text-xl font-bold text-green-700">
-                  {formatCurrency(totalIncome)}
-                </p>
+                    return (
+                      <option key={value} value={value}>
+                        {date.toLocaleDateString("id-ID", {
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
 
-              {/* Unpaid */}
-              <div className="rounded-lg bg-red-50 p-4">
-                <p className="text-sm text-gray-600">
-                  Belum melakukan pembayaran
-                </p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="rounded-xl bg-gray-50 p-4">
+                  <p className="text-sm text-gray-500">Total Pemasukan</p>
 
-                <p className="mt-1 text-xl font-bold text-red-600">
-                  {unpaidCount} penghuni
-                </p>
+                  <p className="mt-1 text-xl font-bold text-gray-900">
+                    {formatCurrency(totalIncome)}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-gray-50 p-4">
+                  <p className="text-sm text-gray-500">Belum Bayar</p>
+
+                  <p className="mt-1 text-xl font-bold text-red-600">
+                    {unpaidCount}
+                  </p>
+                </div>
               </div>
 
-              {/* Selected Date */}
-              {selectedDate ? (
-                <div className="rounded-lg border bg-gray-50 p-4">
-                  <h3 className="mb-4 font-semibold text-gray-900">
-                    Pembayaran Tanggal {selectedDate}
-                  </h3>
+              {selectedDate && (
+                <div className="mt-5 rounded-xl border border-gray-100 bg-gray-50 p-4">
+                  <p className="text-sm font-medium text-gray-700">
+                    Detail tanggal {selectedDate}
+                  </p>
 
-                  {paymentsByDate[selectedDate] ? (
-                    <div className="space-y-4">
+                  {paymentsByDate[selectedDate]?.length > 0 ? (
+                    <div className="mt-3 space-y-2">
                       {paymentsByDate[selectedDate].map((payment, index) => (
                         <div
                           key={index}
-                          className="flex flex-col gap-2 border-b pb-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
+                          className="flex justify-between gap-3 rounded-lg bg-white p-3"
                         >
                           <div>
-                            <p className="font-medium">{payment.name}</p>
+                            <p className="font-medium text-gray-900">
+                              {payment.name}
+                            </p>
 
                             <p className="text-sm text-gray-500">
                               {payment.room}
                             </p>
                           </div>
 
-                          <div className="text-left sm:text-right">
-                            <p className="font-medium">{payment.amount}</p>
-
-                            <p className="text-sm text-green-600">
-                              Sudah bayar
-                            </p>
-                          </div>
+                          <p className="font-semibold text-green-600">
+                            {payment.amount}
+                          </p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500">
+                    <p className="mt-2 text-sm text-gray-500">
                       Tidak ada pembayaran pada tanggal ini.
                     </p>
                   )}
                 </div>
-              ) : (
-                <p className="text-sm text-gray-500">
-                  Klik tanggal pada kalender untuk melihat pembayaran.
-                </p>
               )}
+            </div>
+          </div>
+
+          {/* =========================
+              RIGHT SIDEBAR
+          ========================= */}
+          <div className="space-y-6">
+            {/* SUMMARY */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-2xl bg-white p-4 shadow-sm">
+                <p className="text-sm text-gray-500">Total Penghuni</p>
+
+                <p className="mt-1 text-2xl font-bold text-gray-900">
+                  {penghuni.length}
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white p-4 shadow-sm">
+                <p className="text-sm text-gray-500">Total Kamar</p>
+
+                <p className="mt-1 text-2xl font-bold text-gray-900">
+                  {totalRooms}
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white p-4 shadow-sm">
+                <p className="text-sm text-gray-500">Sudah Bayar</p>
+
+                <p className="mt-1 text-2xl font-bold text-green-600">
+                  {paidCount}
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white p-4 shadow-sm">
+                <p className="text-sm text-gray-500">Belum Bayar</p>
+
+                <p className="mt-1 text-2xl font-bold text-red-600">
+                  {unpaidCount}
+                </p>
+              </div>
+            </div>
+
+            {/* PAYMENT SUMMARY */}
+            <div className="space-y-4">
+              <div className="rounded-2xl bg-white p-5 shadow-sm">
+                <p className="text-sm text-gray-500">Total Pemasukan</p>
+
+                <p className="mt-1 text-2xl font-bold text-gray-900">
+                  {formatCurrency(totalIncome)}
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-500">Progress Pembayaran</p>
+
+                  <p className="font-semibold text-gray-900">
+                    {paymentPercentage}%
+                  </p>
+                </div>
+
+                <div className="mt-3 h-3 overflow-hidden rounded-full bg-gray-100">
+                  <div
+                    className="h-full rounded-full bg-green-500 transition-all"
+                    style={{
+                      width: `${paymentPercentage}%`,
+                    }}
+                  />
+                </div>
+
+                <p className="mt-2 text-xs text-gray-500">
+                  {paidCount} dari {penghuni.length} penghuni sudah membayar.
+                </p>
+              </div>
+            </div>
+
+            {/* ANALYTICS */}
+            <div className="rounded-2xl bg-white p-5 shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Dashboard Analytics
+              </h2>
+
+              <div className="mt-4 space-y-3">
+                <div className="rounded-xl bg-gray-50 p-4">
+                  <p className="text-sm text-gray-500">Total Transaksi</p>
+
+                  <p className="mt-1 text-xl font-bold text-gray-900">
+                    {totalTransactions}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-gray-50 p-4">
+                  <p className="text-sm text-gray-500">Total Pemasukan</p>
+
+                  <p className="mt-1 text-xl font-bold text-gray-900">
+                    {formatCurrency(totalPaymentAmount)}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-gray-50 p-4">
+                  <p className="text-sm text-gray-500">Rata-rata Pembayaran</p>
+
+                  <p className="mt-1 text-xl font-bold text-gray-900">
+                    {formatCurrency(averagePayment)}
+                  </p>
+                </div>
+              </div>
+
+              {/* SIX MONTH TREND */}
+              <div className="mt-5">
+                <p className="mb-3 text-sm font-semibold text-gray-700">
+                  Tren Pemasukan 6 Bulan Terakhir
+                </p>
+
+                <div className="space-y-3">
+                  {monthlyAnalytics.map((item) => (
+                    <div key={item.period}>
+                      <div className="mb-1 flex items-center justify-between text-xs">
+                        <span className="font-medium text-gray-600">
+                          {item.label}
+                        </span>
+
+                        <span className="text-gray-500">
+                          {formatCurrency(item.income)}
+                        </span>
+                      </div>
+
+                      <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+                        <div
+                          className="h-full rounded-full bg-blue-500"
+                          style={{
+                            width: `${
+                              item.income > 0
+                                ? Math.max(
+                                    (item.income / maxMonthlyIncome) * 100,
+                                    3,
+                                  )
+                                : 0
+                            }%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
