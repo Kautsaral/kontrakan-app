@@ -36,6 +36,10 @@ export default function Home() {
 
   const todayPeriod = `${todayYear}-${todayMonth}`;
 
+  const todayFullDate = `${todayYear}-${todayMonth}-${String(
+    todayDay,
+  ).padStart(2, "0")}`;
+
   const changeMonth = (offset) => {
     const date = new Date(year, month - 1 + offset, 1);
 
@@ -58,18 +62,23 @@ export default function Home() {
         .select("*");
 
       if (penghuniError) {
-        console.error("Gagal mengambil data penghuni:", penghuniError);
+        console.error(
+          "Gagal mengambil data penghuni:",
+          penghuniError,
+        );
         return;
       }
 
       setPenghuni(penghuniData);
 
-      const { data: pembayaranData, error: pembayaranError } = await supabase
-        .from("pembayaran")
-        .select("*");
+      const { data: pembayaranData, error: pembayaranError } =
+        await supabase.from("pembayaran").select("*");
 
       if (pembayaranError) {
-        console.error("Gagal mengambil data pembayaran:", pembayaranError);
+        console.error(
+          "Gagal mengambil data pembayaran:",
+          pembayaranError,
+        );
         return;
       }
 
@@ -87,7 +96,9 @@ export default function Home() {
     (payment) => payment.periode_bulan === currentPeriod,
   );
 
-  const paidTenantIds = pembayaranPeriode.map((payment) => payment.penghuni_id);
+  const paidTenantIds = pembayaranPeriode.map(
+    (payment) => payment.penghuni_id,
+  );
 
   const paidCount = penghuni.filter((tenant) =>
     paidTenantIds.includes(tenant.id),
@@ -96,44 +107,58 @@ export default function Home() {
   const unpaidCount = penghuni.length - paidCount;
 
   const totalIncome = pembayaranPeriode.reduce(
-    (total, payment) => total + Number(payment.nominal || 0),
+    (total, payment) =>
+      total + Number(payment.nominal || 0),
     0,
   );
 
   const paymentPercentage =
-    penghuni.length > 0 ? Math.round((paidCount / penghuni.length) * 100) : 0;
+    penghuni.length > 0
+      ? Math.round((paidCount / penghuni.length) * 100)
+      : 0;
 
   // =========================
   // TOTAL ROOM
   // =========================
 
   const totalRooms = new Set(
-    penghuni.map((tenant) => tenant.no_kamar).filter(Boolean),
+    penghuni
+      .map((tenant) => tenant.no_kamar)
+      .filter(Boolean),
   ).size;
 
   // =========================
   // PAYMENT BY DATE
   // =========================
 
-  const paymentsByDate = pembayaranPeriode.reduce((result, payment) => {
-    const day = Number(payment.tanggal_bayar.split("-")[2]);
+  const paymentsByDate = pembayaranPeriode.reduce(
+    (result, payment) => {
+      const day = Number(
+        payment.tanggal_bayar.split("-")[2],
+      );
 
-    const tenant = penghuni.find((tenant) => tenant.id === payment.penghuni_id);
+      const tenant = penghuni.find(
+        (tenant) => tenant.id === payment.penghuni_id,
+      );
 
-    if (!tenant) return result;
+      if (!tenant) return result;
 
-    if (!result[day]) {
-      result[day] = [];
-    }
+      if (!result[day]) {
+        result[day] = [];
+      }
 
-    result[day].push({
-      name: tenant.nama,
-      room: `Kamar ${tenant.no_kamar}`,
-      amount: `Rp${Number(payment.nominal || 0).toLocaleString("id-ID")}`,
-    });
+      result[day].push({
+        name: tenant.nama,
+        room: `Kamar ${tenant.no_kamar}`,
+        amount: `Rp${Number(
+          payment.nominal || 0,
+        ).toLocaleString("id-ID")}`,
+      });
 
-    return result;
-  }, {});
+      return result;
+    },
+    {},
+  );
 
   // =========================
   // UNPAID TENANTS
@@ -141,7 +166,10 @@ export default function Home() {
 
   const unpaidTenants = penghuni.filter(
     (tenant) =>
-      !pembayaranPeriode.some((payment) => payment.penghuni_id === tenant.id),
+      !pembayaranPeriode.some(
+        (payment) =>
+          payment.penghuni_id === tenant.id,
+      ),
   );
 
   // =========================
@@ -161,27 +189,28 @@ export default function Home() {
 
     const day = Number(dueDate.split("-")[2]);
 
-    unpaidDates[day] = (unpaidDates[day] || 0) + 1;
+    unpaidDates[day] =
+      (unpaidDates[day] || 0) + 1;
   });
 
   // =========================
   // OVERDUE TENANTS
   // =========================
 
-  const todayFullDate = `${todayYear}-${todayMonth}-${String(todayDay).padStart(
-    2,
-    "0",
-  )}`;
+  const overdueTenants = unpaidTenants.filter(
+    (tenant) => {
+      if (!tenant.tanggal_jatuh_tempo) {
+        return false;
+      }
 
-  const overdueTenants = unpaidTenants.filter((tenant) => {
-    if (!tenant.tanggal_jatuh_tempo) {
-      return false;
-    }
+      const dueDate = tenant.tanggal_jatuh_tempo;
 
-    const dueDate = tenant.tanggal_jatuh_tempo;
-
-    return dueDate < todayFullDate && dueDate.startsWith(currentPeriod);
-  });
+      return (
+        dueDate < todayFullDate &&
+        dueDate.startsWith(currentPeriod)
+      );
+    },
+  );
 
   // =========================
   // PAYMENT STATUS
@@ -190,7 +219,9 @@ export default function Home() {
   const paymentStatusFromDatabase = {};
 
   pembayaranPeriode.forEach((payment) => {
-    const day = Number(payment.tanggal_bayar.split("-")[2]);
+    const day = Number(
+      payment.tanggal_bayar.split("-")[2],
+    );
 
     if (!paymentStatusFromDatabase[day]) {
       paymentStatusFromDatabase[day] = 0;
@@ -200,13 +231,129 @@ export default function Home() {
   });
 
   // =========================
+  // REMINDER JATUH TEMPO
+  // =========================
+
+  const parseDate = (dateString) => {
+    const [dateYear, dateMonth, dateDay] =
+      dateString.split("-").map(Number);
+
+    return new Date(
+      Date.UTC(
+        dateYear,
+        dateMonth - 1,
+        dateDay,
+      ),
+    );
+  };
+
+  const getDateDifference = (
+    startDate,
+    endDate,
+  ) => {
+    const start = parseDate(startDate);
+    const end = parseDate(endDate);
+
+    return Math.round(
+      (end - start) / (1000 * 60 * 60 * 24),
+    );
+  };
+
+  const reminderTenants = penghuni
+    .filter(
+      (tenant) =>
+        tenant.status_aktif === true &&
+        tenant.tanggal_jatuh_tempo,
+    )
+    .map((tenant) => {
+      const dueDate =
+        tenant.tanggal_jatuh_tempo;
+
+      const duePeriod = dueDate.slice(0, 7);
+
+      const alreadyPaid = pembayaran.some(
+        (payment) =>
+          payment.penghuni_id === tenant.id &&
+          payment.periode_bulan === duePeriod,
+      );
+
+      if (alreadyPaid) {
+        return null;
+      }
+
+      const daysUntilDue = getDateDifference(
+        todayFullDate,
+        dueDate,
+      );
+
+      let category = null;
+
+      if (daysUntilDue < 0) {
+        category = "overdue";
+      } else if (daysUntilDue === 0) {
+        category = "today";
+      } else if (daysUntilDue <= 7) {
+        category = "soon";
+      }
+
+      if (!category) {
+        return null;
+      }
+
+      return {
+        ...tenant,
+        duePeriod,
+        daysUntilDue,
+        category,
+      };
+    })
+    .filter(Boolean)
+    .sort(
+      (a, b) =>
+        a.daysUntilDue - b.daysUntilDue,
+    );
+
+  const overdueReminders =
+    reminderTenants.filter(
+      (tenant) => tenant.category === "overdue",
+    );
+
+  const todayReminders =
+    reminderTenants.filter(
+      (tenant) => tenant.category === "today",
+    );
+
+  const soonReminders =
+    reminderTenants.filter(
+      (tenant) => tenant.category === "soon",
+    );
+
+  // =========================
+  // FORMAT DATE
+  // =========================
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+
+    return new Date(
+      `${dateString}T00:00:00`,
+    ).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  // =========================
   // RENDER
   // =========================
 
   return (
     <main className="min-h-screen bg-gray-100 p-4 sm:p-6">
       <div className="mx-auto max-w-7xl">
+
         {/* Header */}
+
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
             Dashboard Kontrakan
@@ -218,7 +365,9 @@ export default function Home() {
         </div>
 
         {/* Summary Cards */}
+
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
           <div className="rounded-xl bg-white p-4 shadow-sm sm:p-5">
             <p className="text-xs font-medium text-gray-500 sm:text-sm">
               Total Penghuni
@@ -228,7 +377,9 @@ export default function Home() {
               {penghuni.length}
             </p>
 
-            <p className="mt-1 text-xs text-gray-400">Penghuni terdaftar</p>
+            <p className="mt-1 text-xs text-gray-400">
+              Penghuni terdaftar
+            </p>
           </div>
 
           <div className="rounded-xl bg-white p-4 shadow-sm sm:p-5">
@@ -272,12 +423,17 @@ export default function Home() {
               Periode {currentPeriod}
             </p>
           </div>
+
         </div>
 
         {/* Payment Summary */}
+
         <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+
           <div className="rounded-xl bg-white p-4 shadow-sm sm:p-5">
-            <p className="text-sm font-medium text-gray-500">Total Pemasukan</p>
+            <p className="text-sm font-medium text-gray-500">
+              Total Pemasukan
+            </p>
 
             <p className="mt-2 text-2xl font-bold text-gray-900 sm:text-3xl">
               Rp{totalIncome.toLocaleString("id-ID")}
@@ -289,6 +445,7 @@ export default function Home() {
           </div>
 
           <div className="rounded-xl bg-white p-4 shadow-sm sm:p-5">
+
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-gray-500">
                 Progress Pembayaran
@@ -309,85 +466,267 @@ export default function Home() {
             </div>
 
             <p className="mt-2 text-xs text-gray-400">
-              {paidCount} dari {penghuni.length} penghuni sudah melakukan
-              pembayaran
+              {paidCount} dari {penghuni.length} penghuni
+              sudah melakukan pembayaran
             </p>
+
           </div>
+
         </div>
 
-        {/* Overdue */}
-        {overdueTenants.length > 0 && (
-          <div className="mb-8 rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm sm:p-5">
-            <div className="mb-4">
-              <h2 className="font-semibold text-red-700">
-                Pembayaran Terlambat
-              </h2>
+        {/* REMINDER JATUH TEMPO */}
 
-              <p className="mt-1 text-sm text-red-600">
-                Terdapat {overdueTenants.length} penghuni yang melewati tanggal
-                jatuh tempo.
+        {reminderTenants.length > 0 && (
+          <div className="mb-8 rounded-xl border border-yellow-200 bg-yellow-50 p-4 shadow-sm sm:p-5">
+
+            <div className="mb-5">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">
+                  🔔
+                </span>
+
+                <h2 className="font-semibold text-gray-900">
+                  Reminder Jatuh Tempo
+                </h2>
+              </div>
+
+              <p className="mt-1 text-sm text-gray-600">
+                {reminderTenants.length} penghuni
+                membutuhkan perhatian terkait pembayaran.
               </p>
             </div>
 
             <div className="space-y-3">
-              {overdueTenants.map((tenant) => (
-                <div
-                  key={tenant.id}
-                  className="flex flex-col gap-2 rounded-lg bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div>
-                    <p className="font-medium text-gray-900">{tenant.nama}</p>
 
-                    <p className="text-sm text-gray-500">
-                      Kamar {tenant.no_kamar}
+              {/* TERLAMBAT */}
+
+              {overdueReminders.length > 0 && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+
+                  <div className="mb-3">
+                    <p className="font-semibold text-red-700">
+                      🔴 Terlambat
+                    </p>
+
+                    <p className="text-xs text-red-600">
+                      Sudah melewati tanggal jatuh tempo.
                     </p>
                   </div>
 
-                  <div className="text-left sm:text-right">
-                    <p className="text-sm font-medium text-red-600">
-                      Jatuh tempo
-                    </p>
+                  <div className="space-y-2">
+                    {overdueReminders.map(
+                      (tenant) => (
+                        <div
+                          key={tenant.id}
+                          className="flex flex-col gap-2 rounded-lg bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {tenant.nama}
+                            </p>
 
-                    <p className="text-sm text-gray-500">
-                      {tenant.tanggal_jatuh_tempo}
-                    </p>
+                            <p className="text-sm text-gray-500">
+                              Kamar {tenant.no_kamar}
+                            </p>
+                          </div>
+
+                          <div className="text-left sm:text-right">
+                            <p className="text-sm font-medium text-red-600">
+                              Jatuh tempo
+                            </p>
+
+                            <p className="text-sm text-gray-500">
+                              {formatDate(
+                                tenant.tanggal_jatuh_tempo,
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      ),
+                    )}
                   </div>
+
                 </div>
-              ))}
+              )}
+
+              {/* HARI INI */}
+
+              {todayReminders.length > 0 && (
+                <div className="rounded-lg border border-yellow-200 bg-yellow-100 p-4">
+
+                  <div className="mb-3">
+                    <p className="font-semibold text-yellow-700">
+                      🟡 Jatuh Tempo Hari Ini
+                    </p>
+
+                    <p className="text-xs text-yellow-700">
+                      Pembayaran belum tercatat.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {todayReminders.map(
+                      (tenant) => (
+                        <div
+                          key={tenant.id}
+                          className="flex flex-col gap-2 rounded-lg bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {tenant.nama}
+                            </p>
+
+                            <p className="text-sm text-gray-500">
+                              Kamar {tenant.no_kamar}
+                            </p>
+                          </div>
+
+                          <div className="text-left sm:text-right">
+                            <p className="text-sm font-medium text-yellow-700">
+                              Hari ini
+                            </p>
+
+                            <p className="text-sm text-gray-500">
+                              {formatDate(
+                                tenant.tanggal_jatuh_tempo,
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      ),
+                    )}
+                  </div>
+
+                </div>
+              )}
+
+              {/* SEGERA */}
+
+              {soonReminders.length > 0 && (
+                <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+
+                  <div className="mb-3">
+                    <p className="font-semibold text-green-700">
+                      🟢 Segera Jatuh Tempo
+                    </p>
+
+                    <p className="text-xs text-green-700">
+                      Jatuh tempo dalam 7 hari ke depan.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {soonReminders.map(
+                      (tenant) => (
+                        <div
+                          key={tenant.id}
+                          className="flex flex-col gap-2 rounded-lg bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {tenant.nama}
+                            </p>
+
+                            <p className="text-sm text-gray-500">
+                              Kamar {tenant.no_kamar}
+                            </p>
+                          </div>
+
+                          <div className="text-left sm:text-right">
+                            <p className="text-sm font-medium text-green-700">
+                              H-{tenant.daysUntilDue}
+                            </p>
+
+                            <p className="text-sm text-gray-500">
+                              {formatDate(
+                                tenant.tanggal_jatuh_tempo,
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      ),
+                    )}
+                  </div>
+
+                </div>
+              )}
+
+            </div>
+
+          </div>
+        )}
+
+        {/* Semua pembayaran aman / tidak ada reminder */}
+
+        {reminderTenants.length === 0 && (
+          <div className="mb-8 rounded-xl border border-green-200 bg-green-50 p-4 shadow-sm sm:p-5">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">
+                ✅
+              </span>
+
+              <div>
+                <h2 className="font-semibold text-green-700">
+                  Tidak Ada Reminder
+                </h2>
+
+                <p className="mt-1 text-sm text-green-600">
+                  Tidak ada penghuni aktif yang memiliki
+                  pembayaran terlambat atau jatuh tempo
+                  dalam 7 hari ke depan.
+                </p>
+              </div>
             </div>
           </div>
         )}
 
         {/* Main Content */}
+
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+
           {/* Calendar */}
+
           <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6 lg:col-span-2">
+
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
               <h2 className="text-xl font-semibold text-gray-900">
-                {new Date(year, month - 1, 1).toLocaleDateString("id-ID", {
+                {new Date(
+                  year,
+                  month - 1,
+                  1,
+                ).toLocaleDateString("id-ID", {
                   month: "long",
                   year: "numeric",
                 })}
               </h2>
 
               <div className="flex gap-2">
+
                 <button
-                  onClick={() => changeMonth(-1)}
+                  onClick={() =>
+                    changeMonth(-1)
+                  }
                   className="rounded-lg border px-3 py-2 hover:bg-gray-50"
                 >
                   ←
                 </button>
 
                 <button
-                  onClick={() => changeMonth(1)}
+                  onClick={() =>
+                    changeMonth(1)
+                  }
                   className="rounded-lg border px-3 py-2 hover:bg-gray-50"
                 >
                   →
                 </button>
+
               </div>
+
             </div>
 
             {/* Calendar Header */}
+
             <div className="grid grid-cols-7 text-center text-sm font-medium text-gray-500">
               <div>Sen</div>
               <div>Sel</div>
@@ -399,95 +738,147 @@ export default function Home() {
             </div>
 
             {/* Calendar */}
+
             <div className="mt-4 grid grid-cols-7 gap-2">
-              {calendarDays.map((day, index) => (
-                <div
-                  key={index}
-                  onClick={() => day && setSelectedDate(day)}
-                  className={`min-h-16 rounded-lg border p-1.5 text-xs sm:min-h-20 sm:p-2 sm:text-sm ${
-                    day === null
-                      ? "border-transparent bg-gray-50"
-                      : currentPeriod === todayPeriod && day === todayDay
-                        ? "border-blue-500 bg-blue-50"
-                        : "hover:bg-gray-50"
-                  }`}
-                >
-                  {day && (
-                    <div className="flex h-full flex-col">
-                      <span className="font-medium">{day}</span>
 
-                      {/* Paid */}
-                      {paymentStatusFromDatabase[day] > 0 && (
-                        <div className="mt-2 flex items-center gap-1">
-                          <span className="h-2 w-2 rounded-full bg-green-500" />
+              {calendarDays.map(
+                (day, index) => (
+                  <div
+                    key={index}
+                    onClick={() =>
+                      day &&
+                      setSelectedDate(day)
+                    }
+                    className={`min-h-16 rounded-lg border p-1.5 text-xs sm:min-h-20 sm:p-2 sm:text-sm ${
+                      day === null
+                        ? "border-transparent bg-gray-50"
+                        : currentPeriod ===
+                              todayPeriod &&
+                            day === todayDay
+                          ? "border-blue-500 bg-blue-50"
+                          : "hover:bg-gray-50"
+                    }`}
+                  >
+                    {day && (
+                      <div className="flex h-full flex-col">
 
-                          <span className="text-xs text-green-600">
-                            {paymentStatusFromDatabase[day]} Bayar
-                          </span>
-                        </div>
-                      )}
+                        <span className="font-medium">
+                          {day}
+                        </span>
 
-                      {/* Unpaid */}
-                      {unpaidDates[day] > 0 && (
-                        <div className="mt-1 flex items-center gap-1">
-                          <span className="h-2 w-2 rounded-full bg-red-500" />
+                        {/* Paid */}
 
-                          <span className="text-xs text-red-600">
-                            {unpaidDates[day]} Belum
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
+                        {paymentStatusFromDatabase[
+                          day
+                        ] > 0 && (
+                          <div className="mt-2 flex items-center gap-1">
+                            <span className="h-2 w-2 rounded-full bg-green-500" />
+
+                            <span className="text-xs text-green-600">
+                              {
+                                paymentStatusFromDatabase[
+                                  day
+                                ]
+                              }{" "}
+                              Bayar
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Unpaid */}
+
+                        {unpaidDates[day] >
+                          0 && (
+                          <div className="mt-1 flex items-center gap-1">
+                            <span className="h-2 w-2 rounded-full bg-red-500" />
+
+                            <span className="text-xs text-red-600">
+                              {unpaidDates[day]}{" "}
+                              Belum
+                            </span>
+                          </div>
+                        )}
+
+                      </div>
+                    )}
+                  </div>
+                ),
+              )}
+
             </div>
 
             {/* Selected Date Detail */}
+
             {selectedDate && (
               <div className="mt-6 rounded-lg border bg-gray-50 p-3 sm:p-4">
+
                 <div className="mb-3 flex items-center justify-between">
+
                   <h3 className="font-semibold text-gray-900">
-                    Pembayaran Tanggal {selectedDate}
+                    Pembayaran Tanggal{" "}
+                    {selectedDate}
                   </h3>
 
                   <button
-                    onClick={() => setSelectedDate(null)}
+                    onClick={() =>
+                      setSelectedDate(null)
+                    }
                     className="text-sm text-gray-500 hover:text-gray-900"
                   >
                     Tutup
                   </button>
+
                 </div>
 
-                {paymentsByDate[selectedDate] ? (
+                {paymentsByDate[
+                  selectedDate
+                ] ? (
                   <div className="space-y-3">
-                    {paymentsByDate[selectedDate].map((payment, index) => (
-                      <div
-                        key={index}
-                        className="flex flex-col gap-2 border-b pb-3 last:border-b-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div>
-                          <p className="font-medium">{payment.name}</p>
 
-                          <p className="text-sm text-gray-500">
-                            {payment.room}
+                    {paymentsByDate[
+                      selectedDate
+                    ].map(
+                      (
+                        payment,
+                        index,
+                      ) => (
+                        <div
+                          key={index}
+                          className="flex flex-col gap-2 border-b pb-3 last:border-b-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+                        >
+
+                          <div>
+                            <p className="font-medium">
+                              {payment.name}
+                            </p>
+
+                            <p className="text-sm text-gray-500">
+                              {payment.room}
+                            </p>
+                          </div>
+
+                          <p className="font-medium">
+                            {payment.amount}
                           </p>
-                        </div>
 
-                        <p className="font-medium">{payment.amount}</p>
-                      </div>
-                    ))}
+                        </div>
+                      ),
+                    )}
+
                   </div>
                 ) : (
                   <p className="text-sm text-gray-500">
                     Tidak ada pembayaran pada tanggal ini.
                   </p>
                 )}
+
               </div>
             )}
 
             {/* Legend */}
+
             <div className="mt-6 flex flex-wrap gap-3 text-xs text-gray-600 sm:gap-4 sm:text-sm">
+
               <div className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full bg-green-500" />
                 Sudah Bayar
@@ -502,12 +893,17 @@ export default function Home() {
                 <span className="h-3 w-3 rounded-full bg-blue-500" />
                 Hari Ini
               </div>
+
             </div>
+
           </div>
 
           {/* Payment List */}
+
           <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
+
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
               <h2 className="text-xl font-semibold text-gray-900">
                 Pembayaran
               </h2>
@@ -515,45 +911,73 @@ export default function Home() {
               <select
                 value={currentPeriod}
                 onChange={(e) => {
-                  setCurrentPeriod(e.target.value);
+                  setCurrentPeriod(
+                    e.target.value,
+                  );
 
                   setSelectedDate(null);
                 }}
                 className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:w-auto"
               >
-                {Array.from({ length: 24 }, (_, index) => {
-                  const date = new Date(2026, index, 1);
 
-                  const value = `${date.getFullYear()}-${String(
-                    date.getMonth() + 1,
-                  ).padStart(2, "0")}`;
+                {Array.from(
+                  { length: 24 },
+                  (_, index) => {
+                    const date = new Date(
+                      2026,
+                      index,
+                      1,
+                    );
 
-                  const label = date.toLocaleDateString("id-ID", {
-                    month: "long",
-                    year: "numeric",
-                  });
+                    const value = `${date.getFullYear()}-${String(
+                      date.getMonth() + 1,
+                    ).padStart(2, "0")}`;
 
-                  return (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  );
-                })}
+                    const label =
+                      date.toLocaleDateString(
+                        "id-ID",
+                        {
+                          month: "long",
+                          year: "numeric",
+                        },
+                      );
+
+                    return (
+                      <option
+                        key={value}
+                        value={value}
+                      >
+                        {label}
+                      </option>
+                    );
+                  },
+                )}
+
               </select>
+
             </div>
 
             {/* Payment Summary & List */}
+
             <div className="space-y-4">
+
               {/* Total Income */}
+
               <div className="rounded-lg bg-green-50 p-4">
-                <p className="text-sm text-gray-600">Total pemasukan</p>
+                <p className="text-sm text-gray-600">
+                  Total pemasukan
+                </p>
 
                 <p className="mt-1 text-xl font-bold text-green-700">
-                  Rp{totalIncome.toLocaleString("id-ID")}
+                  Rp
+                  {totalIncome.toLocaleString(
+                    "id-ID",
+                  )}
                 </p>
               </div>
 
               {/* Unpaid */}
+
               <div className="rounded-lg bg-red-50 p-4">
                 <p className="text-sm text-gray-600">
                   Belum melakukan pembayaran
@@ -565,51 +989,78 @@ export default function Home() {
               </div>
 
               {/* Selected Date */}
+
               {selectedDate ? (
                 <div className="rounded-lg border bg-gray-50 p-4">
+
                   <h3 className="mb-4 font-semibold text-gray-900">
-                    Pembayaran Tanggal {selectedDate}
+                    Pembayaran Tanggal{" "}
+                    {selectedDate}
                   </h3>
 
-                  {paymentsByDate[selectedDate] ? (
+                  {paymentsByDate[
+                    selectedDate
+                  ] ? (
                     <div className="space-y-4">
-                      {paymentsByDate[selectedDate].map((payment, index) => (
-                        <div
-                          key={index}
-                          className="flex flex-col gap-2 border-b pb-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
-                        >
-                          <div>
-                            <p className="font-medium">{payment.name}</p>
 
-                            <p className="text-sm text-gray-500">
-                              {payment.room}
-                            </p>
+                      {paymentsByDate[
+                        selectedDate
+                      ].map(
+                        (
+                          payment,
+                          index,
+                        ) => (
+                          <div
+                            key={index}
+                            className="flex flex-col gap-2 border-b pb-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
+                          >
+
+                            <div>
+                              <p className="font-medium">
+                                {payment.name}
+                              </p>
+
+                              <p className="text-sm text-gray-500">
+                                {payment.room}
+                              </p>
+                            </div>
+
+                            <div className="text-left sm:text-right">
+
+                              <p className="font-medium">
+                                {payment.amount}
+                              </p>
+
+                              <p className="text-sm text-green-600">
+                                Sudah bayar
+                              </p>
+
+                            </div>
+
                           </div>
+                        ),
+                      )}
 
-                          <div className="text-left sm:text-right">
-                            <p className="font-medium">{payment.amount}</p>
-
-                            <p className="text-sm text-green-600">
-                              Sudah bayar
-                            </p>
-                          </div>
-                        </div>
-                      ))}
                     </div>
                   ) : (
                     <p className="text-sm text-gray-500">
                       Tidak ada pembayaran pada tanggal ini.
                     </p>
                   )}
+
                 </div>
               ) : (
                 <p className="text-sm text-gray-500">
                   Klik tanggal pada kalender untuk melihat pembayaran.
                 </p>
               )}
+
             </div>
+
           </div>
+
         </div>
+
       </div>
     </main>
   );
