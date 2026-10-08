@@ -5,10 +5,8 @@ import { supabase } from "@/lib/supabase";
 
 export default function PenghuniPage() {
   const [penghuni, setPenghuni] = useState([]);
-
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
-
   const [formData, setFormData] = useState({
     nama: "",
     no_hp: "",
@@ -51,14 +49,35 @@ export default function PenghuniPage() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (tenant) => {
+    const { data: payments, error: paymentError } = await supabase
+      .from("pembayaran")
+      .select("id")
+      .eq("penghuni_id", tenant.id);
+
+    if (paymentError) {
+      console.error("Gagal mengecek pembayaran:", paymentError);
+      alert("Gagal mengecek data pembayaran.");
+      return;
+    }
+
+    if (payments.length > 0) {
+      alert(
+        "Penghuni tidak bisa dihapus karena sudah memiliki riwayat pembayaran. Silakan ubah status menjadi Tidak Aktif.",
+      );
+      return;
+    }
+
     const confirmed = window.confirm(
-      "Apakah kamu yakin ingin menghapus penghuni ini?",
+      `Yakin ingin menghapus penghuni ${tenant.nama}?`,
     );
 
     if (!confirmed) return;
 
-    const { error } = await supabase.from("penghuni").delete().eq("id", id);
+    const { error } = await supabase
+      .from("penghuni")
+      .delete()
+      .eq("id", tenant.id);
 
     if (error) {
       console.error("Gagal menghapus penghuni:", error);
@@ -66,7 +85,30 @@ export default function PenghuniPage() {
       return;
     }
 
-    setPenghuni((current) => current.filter((tenant) => tenant.id !== id));
+    setPenghuni((current) => current.filter((item) => item.id !== tenant.id));
+  };
+
+  const handleToggleStatus = async (tenant) => {
+    const newStatus = !tenant.status_aktif;
+
+    const { data, error } = await supabase
+      .from("penghuni")
+      .update({
+        status_aktif: newStatus,
+      })
+      .eq("id", tenant.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Gagal mengubah status penghuni:", error);
+      alert("Gagal mengubah status penghuni.");
+      return;
+    }
+
+    setPenghuni((current) =>
+      current.map((item) => (item.id === tenant.id ? data : item)),
+    );
   };
 
   const handleSubmit = async (e) => {
@@ -121,25 +163,40 @@ export default function PenghuniPage() {
   return (
     <main className="min-h-screen bg-gray-100 p-4 sm:p-6">
       <div className="mx-auto max-w-7xl">
+        {/* Header */}
         <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Data Penghuni</h1>
+
             <p className="mt-1 text-sm text-gray-500 sm:text-base">
               Kelola data penghuni kontrakan
             </p>
           </div>
 
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => {
+              setEditingId(null);
+              setFormData({
+                nama: "",
+                no_hp: "",
+                no_kamar: "",
+                tanggal_masuk: "",
+                tanggal_jatuh_tempo: "",
+                status_aktif: true,
+              });
+              setShowForm(true);
+            }}
             className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
           >
             + Tambah Penghuni
           </button>
         </div>
+
+        {/* Form */}
         {showForm && (
           <div className="mb-6 rounded-xl bg-white p-4 shadow-sm sm:p-6">
             <h2 className="mb-4 text-xl font-semibold text-gray-900">
-              Tambah Penghuni
+              {editingId ? "Edit Penghuni" : "Tambah Penghuni"}
             </h2>
 
             <form
@@ -151,7 +208,10 @@ export default function PenghuniPage() {
                 placeholder="Nama"
                 value={formData.nama}
                 onChange={(e) =>
-                  setFormData({ ...formData, nama: e.target.value })
+                  setFormData({
+                    ...formData,
+                    nama: e.target.value,
+                  })
                 }
                 className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 required
@@ -162,7 +222,10 @@ export default function PenghuniPage() {
                 placeholder="No. HP"
                 value={formData.no_hp}
                 onChange={(e) =>
-                  setFormData({ ...formData, no_hp: e.target.value })
+                  setFormData({
+                    ...formData,
+                    no_hp: e.target.value,
+                  })
                 }
                 className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
@@ -172,7 +235,10 @@ export default function PenghuniPage() {
                 placeholder="No. Kamar"
                 value={formData.no_kamar}
                 onChange={(e) =>
-                  setFormData({ ...formData, no_kamar: e.target.value })
+                  setFormData({
+                    ...formData,
+                    no_kamar: e.target.value,
+                  })
                 }
                 className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 required
@@ -182,6 +248,7 @@ export default function PenghuniPage() {
                 <label className="mb-1 block text-sm text-gray-600">
                   Tanggal Masuk
                 </label>
+
                 <input
                   type="date"
                   value={formData.tanggal_masuk}
@@ -200,6 +267,7 @@ export default function PenghuniPage() {
                 <label className="mb-1 block text-sm text-gray-600">
                   Tanggal Jatuh Tempo
                 </label>
+
                 <input
                   type="date"
                   value={formData.tanggal_jatuh_tempo}
@@ -238,7 +306,10 @@ export default function PenghuniPage() {
 
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={() => {
+                    setShowForm(false);
+                    setEditingId(null);
+                  }}
                   className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium hover:bg-gray-50"
                 >
                   Batal
@@ -248,17 +319,24 @@ export default function PenghuniPage() {
           </div>
         )}
 
+        {/* Table */}
         <div className="overflow-hidden rounded-xl bg-white shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-[1000px] text-left text-sm">
               <thead className="bg-gray-50 text-gray-600">
                 <tr>
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Nama</th>
+
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Kamar</th>
+
                   <th className="px-4 py-3 sm:px-6 sm:py-4">No. HP</th>
+
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Tanggal Masuk</th>
+
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Jatuh Tempo</th>
+
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Status</th>
+
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Action</th>
                 </tr>
               </thead>
@@ -299,7 +377,18 @@ export default function PenghuniPage() {
                     </td>
 
                     <td className="px-4 py-3 sm:px-6 sm:py-4">
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => handleToggleStatus(tenant)}
+                          className={`rounded-lg border px-3 py-2 text-sm ${
+                            tenant.status_aktif
+                              ? "border-orange-200 text-orange-600 hover:bg-orange-50"
+                              : "border-green-200 text-green-600 hover:bg-green-50"
+                          }`}
+                        >
+                          {tenant.status_aktif ? "Nonaktifkan" : "Aktifkan"}
+                        </button>
+
                         <button
                           onClick={() =>
                             (window.location.href = `/penghuni/${tenant.id}/riwayat`)
@@ -308,6 +397,7 @@ export default function PenghuniPage() {
                         >
                           Riwayat
                         </button>
+
                         <button
                           onClick={() => handleEdit(tenant)}
                           className="rounded border px-3 py-1 text-sm hover:bg-gray-50"
@@ -316,7 +406,7 @@ export default function PenghuniPage() {
                         </button>
 
                         <button
-                          onClick={() => handleDelete(tenant.id)}
+                          onClick={() => handleDelete(tenant)}
                           className="rounded border border-red-200 px-3 py-1 text-sm text-red-600 hover:bg-red-50"
                         >
                           Hapus
