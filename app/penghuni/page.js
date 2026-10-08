@@ -301,6 +301,14 @@ export default function PenghuniPage() {
                     <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <div className="flex gap-2">
                         <button
+                          onClick={() =>
+                            (window.location.href = `/penghuni/${tenant.id}/riwayat`)
+                          }
+                          className="rounded-lg border border-blue-200 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50"
+                        >
+                          Riwayat
+                        </button>
+                        <button
                           onClick={() => handleEdit(tenant)}
                           className="rounded border px-3 py-1 text-sm hover:bg-gray-50"
                         >
