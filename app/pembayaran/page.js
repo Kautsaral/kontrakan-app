@@ -7,8 +7,14 @@ export default function PembayaranPage() {
   const [pembayaran, setPembayaran] = useState([]);
   const [penghuni, setPenghuni] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const [search, setSearch] = useState("");
+  const [periodeFilter, setPeriodeFilter] = useState("");
+  const [tanggalFilter, setTanggalFilter] = useState("");
+
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
   const [formData, setFormData] = useState({
     penghuni_id: "",
     tanggal_bayar: "",
@@ -47,10 +53,37 @@ export default function PembayaranPage() {
     fetchData();
   }, []);
 
-  const getTenantName = (tenantId) => {
-    const tenant = penghuni.find((tenant) => tenant.id === tenantId);
+  const getTenant = (tenantId) => {
+    return penghuni.find((tenant) => tenant.id === tenantId);
+  };
 
+  const getTenantName = (tenantId) => {
+    const tenant = getTenant(tenantId);
     return tenant ? tenant.nama : "-";
+  };
+
+  const filteredPembayaran = pembayaran.filter((payment) => {
+    const tenant = getTenant(payment.penghuni_id);
+    const keyword = search.toLowerCase().trim();
+
+    const matchesSearch =
+      !keyword ||
+      tenant?.nama?.toLowerCase().includes(keyword) ||
+      tenant?.no_kamar?.toLowerCase().includes(keyword);
+
+    const matchesPeriode =
+      !periodeFilter || payment.periode_bulan === periodeFilter;
+
+    const matchesTanggal =
+      !tanggalFilter || payment.tanggal_bayar === tanggalFilter;
+
+    return matchesSearch && matchesPeriode && matchesTanggal;
+  });
+
+  const resetFilters = () => {
+    setSearch("");
+    setPeriodeFilter("");
+    setTanggalFilter("");
   };
 
   const handleEdit = (payment) => {
@@ -180,18 +213,31 @@ export default function PembayaranPage() {
             <h1 className="text-3xl font-bold text-gray-900">
               Data Pembayaran
             </h1>
+
             <p className="mt-1 text-gray-500">
               Kelola pembayaran penghuni kontrakan
             </p>
           </div>
 
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => {
+              setEditingId(null);
+
+              setFormData({
+                penghuni_id: "",
+                tanggal_bayar: "",
+                nominal: "",
+                periode_bulan: "",
+              });
+
+              setShowForm(true);
+            }}
             className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
           >
             + Tambah Pembayaran
           </button>
         </div>
+
         {showForm && (
           <div className="mb-6 rounded-xl bg-white p-4 shadow-sm sm:p-6">
             <h2 className="mb-4 text-xl font-semibold text-gray-900">
@@ -300,6 +346,7 @@ export default function PembayaranPage() {
                   onClick={() => {
                     setShowForm(false);
                     setEditingId(null);
+
                     setFormData({
                       penghuni_id: "",
                       tanggal_bayar: "",
@@ -321,34 +368,105 @@ export default function PembayaranPage() {
             {errorMessage}
           </div>
         )}
+
+        {/* Search & Filter */}
+        <div className="mb-6 rounded-xl bg-white p-4 shadow-sm sm:p-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_220px_220px_auto]">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Cari Pembayaran
+              </label>
+
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Nama penghuni atau no. kamar..."
+                className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Periode
+              </label>
+
+              <input
+                type="month"
+                value={periodeFilter}
+                onChange={(e) => setPeriodeFilter(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Tanggal Bayar
+              </label>
+
+              <input
+                type="date"
+                value={tanggalFilter}
+                onChange={(e) => setTanggalFilter(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
+
+            <div className="flex items-end">
+              <button
+                onClick={resetFilters}
+                className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium hover:bg-gray-50 md:w-auto"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-3 text-sm text-gray-500">
+            Menampilkan{" "}
+            <span className="font-medium text-gray-700">
+              {filteredPembayaran.length}
+            </span>{" "}
+            dari {pembayaran.length} pembayaran
+          </div>
+        </div>
+
         <div className="overflow-hidden rounded-xl bg-white shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-gray-600">
                 <tr>
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Penghuni</th>
+
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Tanggal Bayar</th>
+
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Nominal</th>
+
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Periode</th>
+
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Action</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y">
-                {pembayaran.map((payment) => (
+                {filteredPembayaran.map((payment) => (
                   <tr key={payment.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-900 sm:px-6 sm:py-4">
                       {getTenantName(payment.penghuni_id)}
                     </td>
 
-                    <td className="px-4 py-3 sm:px-6 sm:py-4">{payment.tanggal_bayar}</td>
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
+                      {payment.tanggal_bayar}
+                    </td>
 
                     <td className="px-4 py-3 sm:px-6 sm:py-4">
                       Rp
                       {Number(payment.nominal).toLocaleString("id-ID")}
                     </td>
 
-                    <td className="px-4 py-3 sm:px-6 sm:py-4">{payment.periode_bulan}</td>
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
+                      {payment.periode_bulan}
+                    </td>
 
                     <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <div className="flex gap-2">
@@ -379,13 +497,15 @@ export default function PembayaranPage() {
                   </tr>
                 ))}
 
-                {pembayaran.length === 0 && (
+                {filteredPembayaran.length === 0 && (
                   <tr>
                     <td
                       colSpan="5"
                       className="px-4 py-8 text-center text-sm text-gray-500 sm:px-6 sm:py-10"
                     >
-                      Belum ada data pembayaran.
+                      {pembayaran.length === 0
+                        ? "Belum ada data pembayaran."
+                        : "Tidak ada pembayaran yang sesuai dengan pencarian atau filter."}
                     </td>
                   </tr>
                 )}

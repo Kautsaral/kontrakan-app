@@ -5,8 +5,12 @@ import { supabase } from "@/lib/supabase";
 
 export default function PenghuniPage() {
   const [penghuni, setPenghuni] = useState([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
   const [formData, setFormData] = useState({
     nama: "",
     no_hp: "",
@@ -33,6 +37,23 @@ export default function PenghuniPage() {
 
     fetchPenghuni();
   }, []);
+
+  const filteredPenghuni = penghuni.filter((tenant) => {
+    const keyword = search.toLowerCase().trim();
+
+    const matchesSearch =
+      !keyword ||
+      tenant.nama?.toLowerCase().includes(keyword) ||
+      tenant.no_kamar?.toLowerCase().includes(keyword) ||
+      tenant.no_hp?.toLowerCase().includes(keyword);
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" && tenant.status_aktif === true) ||
+      (statusFilter === "inactive" && tenant.status_aktif === false);
+
+    return matchesSearch && matchesStatus;
+  });
 
   const handleEdit = (tenant) => {
     setEditingId(tenant.id);
@@ -160,10 +181,14 @@ export default function PenghuniPage() {
     setShowForm(false);
   };
 
+  const resetFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
+  };
+
   return (
     <main className="min-h-screen bg-gray-100 p-4 sm:p-6">
       <div className="mx-auto max-w-7xl">
-        {/* Header */}
         <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Data Penghuni</h1>
@@ -176,6 +201,7 @@ export default function PenghuniPage() {
           <button
             onClick={() => {
               setEditingId(null);
+
               setFormData({
                 nama: "",
                 no_hp: "",
@@ -184,6 +210,7 @@ export default function PenghuniPage() {
                 tanggal_jatuh_tempo: "",
                 status_aktif: true,
               });
+
               setShowForm(true);
             }}
             className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
@@ -192,7 +219,6 @@ export default function PenghuniPage() {
           </button>
         </div>
 
-        {/* Form */}
         {showForm && (
           <div className="mb-6 rounded-xl bg-white p-4 shadow-sm sm:p-6">
             <h2 className="mb-4 text-xl font-semibold text-gray-900">
@@ -319,30 +345,75 @@ export default function PenghuniPage() {
           </div>
         )}
 
-        {/* Table */}
+        {/* Search & Filter */}
+        <div className="mb-6 rounded-xl bg-white p-4 shadow-sm sm:p-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_220px_auto]">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Cari Penghuni
+              </label>
+
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Nama, no. kamar, atau no. HP..."
+                className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Status
+              </label>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="all">Semua Status</option>
+                <option value="active">Aktif</option>
+                <option value="inactive">Tidak Aktif</option>
+              </select>
+            </div>
+
+            <div className="flex items-end">
+              <button
+                onClick={resetFilters}
+                className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium hover:bg-gray-50 md:w-auto"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-3 text-sm text-gray-500">
+            Menampilkan{" "}
+            <span className="font-medium text-gray-700">
+              {filteredPenghuni.length}
+            </span>{" "}
+            dari {penghuni.length} penghuni
+          </div>
+        </div>
+
         <div className="overflow-hidden rounded-xl bg-white shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1000px] text-left text-sm">
               <thead className="bg-gray-50 text-gray-600">
                 <tr>
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Nama</th>
-
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Kamar</th>
-
                   <th className="px-4 py-3 sm:px-6 sm:py-4">No. HP</th>
-
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Tanggal Masuk</th>
-
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Jatuh Tempo</th>
-
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Status</th>
-
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Action</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y">
-                {penghuni.map((tenant) => (
+                {filteredPenghuni.map((tenant) => (
                   <tr key={tenant.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-900 sm:px-6 sm:py-4">
                       {tenant.nama}
@@ -416,13 +487,15 @@ export default function PenghuniPage() {
                   </tr>
                 ))}
 
-                {penghuni.length === 0 && (
+                {filteredPenghuni.length === 0 && (
                   <tr>
                     <td
                       colSpan="7"
                       className="px-4 py-8 text-center text-sm text-gray-500 sm:px-6 sm:py-10"
                     >
-                      Belum ada data penghuni.
+                      {penghuni.length === 0
+                        ? "Belum ada data penghuni."
+                        : "Tidak ada penghuni yang sesuai dengan pencarian atau filter."}
                     </td>
                   </tr>
                 )}
