@@ -7,11 +7,9 @@ export default function PembayaranPage() {
   const [pembayaran, setPembayaran] = useState([]);
   const [penghuni, setPenghuni] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
-
   const [search, setSearch] = useState("");
   const [periodeFilter, setPeriodeFilter] = useState("");
   const [tanggalFilter, setTanggalFilter] = useState("");
-
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
@@ -84,6 +82,69 @@ export default function PembayaranPage() {
     setSearch("");
     setPeriodeFilter("");
     setTanggalFilter("");
+  };
+
+  // =========================
+  // PHASE 22 - EXPORT CSV
+  // =========================
+
+  const handleExportCSV = () => {
+    if (filteredPembayaran.length === 0) {
+      alert("Tidak ada data pembayaran untuk diekspor.");
+      return;
+    }
+
+    const headers = [
+      "Nama",
+      "No. Kamar",
+      "Tanggal Bayar",
+      "Periode",
+      "Nominal",
+    ];
+
+    const rows = filteredPembayaran.map((payment) => {
+      const tenant = getTenant(payment.penghuni_id);
+
+      return [
+        tenant?.nama || "-",
+        tenant?.no_kamar || "-",
+        payment.tanggal_bayar || "-",
+        payment.periode_bulan || "-",
+        Number(payment.nominal || 0),
+      ];
+    });
+
+    const total = filteredPembayaran.reduce(
+      (sum, payment) => sum + Number(payment.nominal || 0),
+      0,
+    );
+
+    rows.push(["", "", "", "TOTAL", total]);
+
+    const csvContent = [headers, ...rows]
+      .map((row) =>
+        row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(","),
+      )
+      .join("\n");
+
+    const blob = new Blob([`\uFEFF${csvContent}`], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+
+    const today = new Date().toISOString().split("T")[0];
+
+    link.download = `laporan-pembayaran-${today}.csv`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
   };
 
   const handleEdit = (payment) => {
@@ -207,18 +268,20 @@ export default function PembayaranPage() {
 
   return (
     <main className="min-h-screen bg-gray-100 p-4 sm:p-6">
+      {" "}
       <div className="mx-auto max-w-7xl">
+        {" "}
         <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
+          {" "}
           <div>
+            {" "}
             <h1 className="text-3xl font-bold text-gray-900">
-              Data Pembayaran
+              Data Pembayaran{" "}
             </h1>
-
             <p className="mt-1 text-gray-500">
               Kelola pembayaran penghuni kontrakan
             </p>
           </div>
-
           <button
             onClick={() => {
               setEditingId(null);
@@ -237,7 +300,6 @@ export default function PembayaranPage() {
             + Tambah Pembayaran
           </button>
         </div>
-
         {showForm && (
           <div className="mb-6 rounded-xl bg-white p-4 shadow-sm sm:p-6">
             <h2 className="mb-4 text-xl font-semibold text-gray-900">
@@ -362,13 +424,11 @@ export default function PembayaranPage() {
             </form>
           </div>
         )}
-
         {errorMessage && (
           <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
             {errorMessage}
           </div>
         )}
-
         {/* Search & Filter */}
         <div className="mb-6 rounded-xl bg-white p-4 shadow-sm sm:p-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_220px_220px_auto]">
@@ -412,12 +472,19 @@ export default function PembayaranPage() {
               />
             </div>
 
-            <div className="flex items-end">
+            <div className="flex items-end gap-2">
               <button
                 onClick={resetFilters}
                 className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium hover:bg-gray-50 md:w-auto"
               >
                 Reset
+              </button>
+
+              <button
+                onClick={handleExportCSV}
+                className="w-full rounded-lg bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700 md:w-auto"
+              >
+                Export CSV
               </button>
             </div>
           </div>
@@ -430,7 +497,6 @@ export default function PembayaranPage() {
             dari {pembayaran.length} pembayaran
           </div>
         </div>
-
         <div className="overflow-hidden rounded-xl bg-white shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
