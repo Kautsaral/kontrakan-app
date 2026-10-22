@@ -138,6 +138,7 @@ export default function Home() {
 
   const unpaidTenants = penghuni.filter(
     (tenant) =>
+      tenant.status_aktif === true &&
       !pembayaranPeriode.some((payment) => payment.penghuni_id === tenant.id),
   );
 
@@ -156,6 +157,28 @@ export default function Home() {
 
     unpaidDates[day] = (unpaidDates[day] || 0) + 1;
   });
+
+  const unpaidTenantsByDate = unpaidTenants.reduce((result, tenant) => {
+    if (!tenant.tanggal_jatuh_tempo) {
+      return result;
+    }
+
+    const dueDate = tenant.tanggal_jatuh_tempo;
+
+    if (!dueDate.startsWith(currentPeriod)) {
+      return result;
+    }
+
+    const day = Number(dueDate.split("-")[2]);
+
+    if (!result[day]) {
+      result[day] = [];
+    }
+
+    result[day].push(tenant);
+
+    return result;
+  }, {});
 
   // =========================
   // OVERDUE
@@ -341,7 +364,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gray-100 p-4 sm:p-6">
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8">
         {/* HEADER */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
@@ -615,24 +638,28 @@ export default function Home() {
                 </div>
 
                 {/* SELECTED DATE */}
-                {selectedDate && (
-                  <div className="mt-6 rounded-xl border border-gray-100 bg-gray-50 p-4">
-                    <h3 className="mb-3 font-semibold text-gray-900">
-                      Pembayaran Tanggal {selectedDate} {periodLabel}
-                    </h3>
 
-                    {paymentsByDate[selectedDate]?.length > 0 ? (
-                      <div className="space-y-3">
-                        {paymentsByDate[selectedDate].map((payment, index) => (
+                {selectedDate && (
+                  <div className="mt-5 rounded-xl border border-gray-100 bg-gray-50 p-4">
+                    <p className="font-semibold text-gray-900">
+                      Detail tanggal {selectedDate} {periodLabel}
+                    </p>
+
+                    <div className="mt-4 space-y-3">
+                      <h4 className="text-sm font-semibold text-green-700">
+                        Sudah Bayar
+                      </h4>
+
+                      {paymentsByDate[selectedDate]?.length > 0 ? (
+                        paymentsByDate[selectedDate].map((payment, index) => (
                           <div
-                            key={index}
-                            className="flex flex-col justify-between gap-2 rounded-lg border border-gray-200 bg-white p-3 sm:flex-row sm:items-center"
+                            key={`paid-${index}`}
+                            className="flex justify-between gap-3 rounded-lg bg-white p-3"
                           >
                             <div>
                               <p className="font-medium text-gray-900">
                                 {payment.name}
                               </p>
-
                               <p className="text-sm text-gray-500">
                                 {payment.room}
                               </p>
@@ -642,13 +669,44 @@ export default function Home() {
                               {payment.amount}
                             </p>
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500">
-                        Belum ada pembayaran pada tanggal ini.
-                      </p>
-                    )}
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500">
+                          Belum ada pembayaran pada tanggal ini.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="mt-5 space-y-3">
+                      <h4 className="text-sm font-semibold text-red-700">
+                        Belum Bayar
+                      </h4>
+
+                      {unpaidTenantsByDate[selectedDate]?.length > 0 ? (
+                        unpaidTenantsByDate[selectedDate].map((tenant) => (
+                          <div
+                            key={tenant.id}
+                            className="rounded-lg bg-white p-3"
+                          >
+                            <p className="font-medium text-gray-900">
+                              {tenant.nama}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              Kamar {tenant.no_kamar}
+                            </p>
+                            <p className="mt-1 text-sm text-red-600">
+                              Jatuh tempo{" "}
+                              {formatDate(tenant.tanggal_jatuh_tempo)}
+                            </p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500">
+                          Tidak ada penghuni aktif yang belum membayar dengan
+                          jatuh tempo pada tanggal ini.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
 
