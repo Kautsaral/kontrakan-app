@@ -269,7 +269,7 @@ export default function PembayaranPage() {
   return (
     <main className="min-h-screen bg-gray-100 p-4 sm:p-6">
       {" "}
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8">
         {" "}
         <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
           {" "}
